@@ -27,6 +27,27 @@
     height: auto;
 }
 
+.logo-slogan {
+    margin: -7px 0 15px;
+    color: var(--navy);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .1px;
+    text-align: center;
+}
+
+.logo-slogan::after {
+    display: block;
+    width: 34px;
+    height: 2px;
+    margin: 8px auto 0;
+    content: "";
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--green), var(--green-dark));
+}
+
+.logo-slogan.is-animating { animation: slogan-in .65s ease-out both; }
+
 .auth-box {
     position: relative;
     width: min(980px, 100%);
@@ -459,6 +480,11 @@ body.modal-open { overflow: hidden; }
     to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes slogan-in {
+    from { opacity: 0; transform: translateY(-7px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 /* Celular */
 @media (max-width: 700px) {
     .page { justify-content: flex-start; padding: 24px 16px; }
@@ -469,4 +495,5 @@ body.modal-open { overflow: hidden; }
     .auth-box.show-register .register-panel { transform: translateX(0); }
     .side-panel { display: none; }
     .mobile-link { display: block; }
+    .logo-slogan { margin-top: -5px; margin-bottom: 13px; font-size: 13px; }
 }

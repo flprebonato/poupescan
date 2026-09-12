@@ -1,4 +1,5 @@
 const authBox = document.querySelector('#auth-box');
+const logoSlogan = document.querySelector('#logo-slogan');
 const feedbackModal = document.querySelector('#feedback-modal');
 const feedbackCard = document.querySelector('#feedback-card');
 const feedbackTitle = document.querySelector('#feedback-title');
@@ -12,6 +13,12 @@ const apiBaseUrl = isLiveServer ? `http://${backendHost}:8000` : '';
 let elementoAntesDaModal = null;
 let confirmarModal = fecharModal;
 let cancelarModal = fecharModal;
+
+function animarSlogan() {
+    logoSlogan.classList.remove('is-animating');
+    void logoSlogan.offsetWidth;
+    logoSlogan.classList.add('is-animating');
+}
 
 async function lerRespostaJson(response) {
     const contentType = response.headers.get('content-type') || '';
@@ -33,10 +40,12 @@ async function lerRespostaJson(response) {
 
 function mostrarCadastro() {
     authBox.classList.add('show-register');
+    animarSlogan();
 }
 
 function mostrarLogin() {
     authBox.classList.remove('show-register');
+    animarSlogan();
 }
 
 async function carregarCaptcha() {

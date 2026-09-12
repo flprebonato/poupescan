@@ -211,6 +211,8 @@ def test_tela_expoe_formulario_e_navegacao_de_cadastro():
     assert 'id="captcha-answer"' in response.text
     assert 'id="show-register"' in response.text
     assert 'src="assets/logo-poupescan.png"' in response.text
+    assert 'id="logo-slogan"' in response.text
+    assert 'Armazene seus dados de despesas com facilidade.' in response.text
     assert 'auth-tabs' not in response.text
 
     logo = client.get("/assets/logo-poupescan.png")
@@ -238,6 +240,8 @@ def test_area_autenticada_expoe_configuracoes_de_perfil():
     assert 'name="nome"' in response.text
     assert 'name="email"' in response.text
     assert 'name="nova_senha"' in response.text
+    assert 'id="account-feedback-modal"' in response.text
+    assert 'id="account-feedback-button"' in response.text
 
 
 def test_cadastro_rejeita_captcha_incorreto():

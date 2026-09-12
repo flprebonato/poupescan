@@ -4,8 +4,13 @@ const apiBaseUrl = isLiveServer ? `http://${backendHost}:8000` : '';
 const settingsModal = document.querySelector('#settings-modal');
 const settingsForm = document.querySelector('#settings-form');
 const settingsNotice = document.querySelector('#settings-notice');
+const settingsPasswordTrigger = document.querySelector('#settings-password-trigger');
+const settingsPasswordFields = document.querySelector('#settings-password-fields');
+const accountFeedbackModal = document.querySelector('#account-feedback-modal');
+const accountFeedbackText = document.querySelector('#account-feedback-text');
 let usuarioAtual = null;
 let elementoAntesDoModal = null;
+let elementoAntesDoFeedback = null;
 
 async function lerRespostaJson(response) {
     const contentType = response.headers.get('content-type') || '';
@@ -82,7 +87,7 @@ function validarConfiguracoes() {
     if (novaSenha.value !== confirmarSenha.value) {
         invalidar(confirmarSenha, 'As novas senhas não coincidem.');
     }
-    if (!senhaAtual.value) invalidar(senhaAtual, 'Digite sua senha atual para salvar.');
+    if (!senhaAtual.value) invalidar(senhaAtual, 'Digite sua senha atual.');
 
     primeiroInvalido?.focus();
     return !primeiroInvalido;
@@ -93,6 +98,7 @@ function abrirConfiguracoes() {
 
     elementoAntesDoModal = document.activeElement;
     settingsForm.reset();
+    definirAlteracaoSenhaAberta(false);
     limparErros();
     document.querySelector('#settings-name').value = usuarioAtual.nome;
     document.querySelector('#settings-email').value = usuarioAtual.email;
@@ -101,24 +107,94 @@ function abrirConfiguracoes() {
     document.querySelector('#settings-name').focus();
 }
 
+function definirAlteracaoSenhaAberta(aberta) {
+    settingsPasswordFields.hidden = !aberta;
+    settingsPasswordTrigger.setAttribute('aria-expanded', String(aberta));
+
+    if (!aberta) {
+        settingsPasswordFields.querySelectorAll('input').forEach((input) => {
+            input.value = '';
+            limparErro(input);
+        });
+        settingsPasswordFields.querySelectorAll('.settings-password-toggle').forEach((button) => {
+            const input = document.querySelector(`#${button.dataset.passwordTarget}`);
+            input.type = 'password';
+            button.classList.remove('is-visible');
+            button.setAttribute('aria-pressed', 'false');
+            button.setAttribute('aria-label', button.getAttribute('aria-label').replace('Ocultar', 'Mostrar'));
+        });
+    }
+}
+
+function ocultarSenhasConfiguracoes() {
+    settingsForm.querySelectorAll('.settings-password-toggle').forEach((button) => {
+        const input = document.querySelector(`#${button.dataset.passwordTarget}`);
+        input.type = 'password';
+        button.classList.remove('is-visible');
+        button.setAttribute('aria-pressed', 'false');
+        button.setAttribute('aria-label', button.getAttribute('aria-label').replace('Ocultar', 'Mostrar'));
+    });
+}
+
 function fecharConfiguracoes() {
+    definirAlteracaoSenhaAberta(false);
+    ocultarSenhasConfiguracoes();
     settingsModal.hidden = true;
     document.body.classList.remove('settings-open');
     elementoAntesDoModal?.focus();
 }
 
+function mostrarSucessoAtualizacao(mensagem) {
+    elementoAntesDoFeedback = document.activeElement;
+    accountFeedbackText.textContent = mensagem;
+    accountFeedbackModal.hidden = false;
+    document.body.classList.add('feedback-open');
+    document.querySelector('#account-feedback-button').focus();
+}
+
+function fecharFeedbackAtualizacao() {
+    accountFeedbackModal.hidden = true;
+    document.body.classList.remove('feedback-open');
+    elementoAntesDoFeedback?.focus();
+}
+
 document.querySelector('#settings-button').addEventListener('click', abrirConfiguracoes);
 document.querySelector('#settings-close').addEventListener('click', fecharConfiguracoes);
 document.querySelector('#settings-cancel').addEventListener('click', fecharConfiguracoes);
+settingsPasswordTrigger.addEventListener('click', () => {
+    definirAlteracaoSenhaAberta(settingsPasswordFields.hidden);
+    if (!settingsPasswordFields.hidden) document.querySelector('#settings-new-password').focus();
+});
 settingsModal.addEventListener('click', (event) => {
     if (event.target === settingsModal) fecharConfiguracoes();
 });
+document.querySelector('#account-feedback-close').addEventListener('click', fecharFeedbackAtualizacao);
+document.querySelector('#account-feedback-button').addEventListener('click', fecharFeedbackAtualizacao);
+accountFeedbackModal.addEventListener('click', (event) => {
+    if (event.target === accountFeedbackModal) fecharFeedbackAtualizacao();
+});
 document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !settingsModal.hidden) fecharConfiguracoes();
+    if (event.key !== 'Escape') return;
+    if (!accountFeedbackModal.hidden) fecharFeedbackAtualizacao();
+    else if (!settingsModal.hidden) fecharConfiguracoes();
 });
 
 settingsForm.querySelectorAll('input').forEach((input) => {
     input.addEventListener('input', () => limparErro(input));
+});
+
+settingsForm.querySelectorAll('.settings-password-toggle').forEach((button) => {
+    button.addEventListener('click', () => {
+        const input = document.querySelector(`#${button.dataset.passwordTarget}`);
+        const deveMostrar = input.type === 'password';
+
+        input.type = deveMostrar ? 'text' : 'password';
+        button.classList.toggle('is-visible', deveMostrar);
+        button.setAttribute('aria-pressed', String(deveMostrar));
+        button.setAttribute('aria-label', deveMostrar
+            ? button.getAttribute('aria-label').replace('Mostrar', 'Ocultar')
+            : button.getAttribute('aria-label').replace('Ocultar', 'Mostrar'));
+    });
 });
 
 settingsForm.addEventListener('submit', async (event) => {
@@ -155,7 +231,8 @@ settingsForm.addEventListener('submit', async (event) => {
         document.querySelector('#settings-current-password').value = '';
         document.querySelector('#settings-new-password').value = '';
         document.querySelector('#settings-confirm-password').value = '';
-        mostrarAviso(resultado.mensagem, 'success');
+        fecharConfiguracoes();
+        mostrarSucessoAtualizacao(resultado.mensagem);
     } catch (error) {
         if (error.message === 'A senha atual está incorreta.') {
             const senhaAtual = document.querySelector('#settings-current-password');

@@ -87,6 +87,7 @@ O uso de duas etapas no Dockerfile evita colocar `pip` e ferramentas de desenvol
 - `GET /api/auth/captcha` — gera a pergunta e o token assinado do CAPTCHA.
 - `POST /api/auth/login` — autentica e inicia a sessão.
 - `GET /api/auth/me` — retorna o usuário autenticado.
+- `PATCH /api/auth/me` — atualiza nome, e-mail e senha após confirmar a senha atual.
 - `POST /api/auth/logout` — encerra a sessão.
 - `GET /api/health` — verifica aplicação e banco.
 

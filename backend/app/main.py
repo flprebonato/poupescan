@@ -155,7 +155,7 @@ def atualizar_perfil(
 
     db.refresh(usuario)
     return AuthResponse(
-        mensagem="Dados atualizados com sucesso!",
+        mensagem="Dados atualizados com sucesso.",
         usuario=UsuarioResponse.model_validate(usuario),
     )
 

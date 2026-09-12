@@ -35,12 +35,6 @@
         <section class="settings-dialog">
             <button class="settings-close" id="settings-close" type="button" aria-label="Fechar configurações">&times;</button>
             <div class="settings-heading">
-                <span class="settings-heading-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="3"></circle>
-                        <path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14.2 3h-4.1l-.3 2.7a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.4-1a7 7 0 0 0 2 1.2l.3 2.7h4.1l.3-2.7a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.5A7 7 0 0 0 19 12Z"></path>
-                    </svg>
-                </span>
                 <div>
                     <h2 id="settings-title">Configurações da conta</h2>
                     <p>Atualize seus dados pessoais e de acesso.</p>
@@ -51,41 +45,120 @@
                 <div class="settings-grid">
                     <div class="settings-field">
                         <label for="settings-name">Nome</label>
-                        <input id="settings-name" name="nome" type="text" autocomplete="name" minlength="2" maxlength="120" required>
+                        <div class="settings-input-group">
+                            <svg class="settings-input-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="8" r="4"></circle>
+                                <path d="M4 21a8 8 0 0 1 16 0"></path>
+                            </svg>
+                            <input id="settings-name" name="nome" type="text" autocomplete="name" minlength="2" maxlength="120" placeholder="Digite seu nome" required>
+                        </div>
                         <span class="settings-error" aria-live="polite"></span>
                     </div>
                     <div class="settings-field">
                         <label for="settings-email">E-mail</label>
-                        <input id="settings-email" name="email" type="email" autocomplete="email" required>
-                        <span class="settings-error" aria-live="polite"></span>
-                    </div>
-                    <div class="settings-field">
-                        <label for="settings-new-password">Nova senha <small>(opcional)</small></label>
-                        <input id="settings-new-password" name="nova_senha" type="password" autocomplete="new-password" minlength="10" maxlength="128" placeholder="Mínimo de 10 caracteres">
-                        <span class="settings-error" aria-live="polite"></span>
-                    </div>
-                    <div class="settings-field">
-                        <label for="settings-confirm-password">Confirmar nova senha</label>
-                        <input id="settings-confirm-password" name="confirmar_senha" type="password" autocomplete="new-password" placeholder="Repita a nova senha">
+                        <div class="settings-input-group">
+                            <svg class="settings-input-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+                                <path d="m4 7 8 6 8-6"></path>
+                            </svg>
+                            <input id="settings-email" name="email" type="email" autocomplete="email" placeholder="Digite seu e-mail" required>
+                        </div>
                         <span class="settings-error" aria-live="polite"></span>
                     </div>
                 </div>
 
-                <div class="settings-separator"></div>
+                <div class="settings-password-section">
+                    <button class="settings-password-trigger" id="settings-password-trigger" type="button" aria-expanded="false" aria-controls="settings-password-fields">
+                        <svg class="settings-password-trigger-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <rect x="5" y="10" width="14" height="10" rx="2"></rect>
+                            <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+                        </svg>
+                        <span>Alterar senha</span>
+                        <svg class="settings-password-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m8 10 4 4 4-4"></path>
+                        </svg>
+                    </button>
 
-                <div class="settings-field">
+                    <div class="settings-password-fields" id="settings-password-fields" hidden>
+                        <div class="settings-field">
+                            <label class="settings-label-with-hint" for="settings-new-password">
+                                <span>Nova senha</span>
+                                <span class="settings-field-hint">Mínimo 10 caracteres</span>
+                            </label>
+                            <div class="settings-input-group">
+                                <svg class="settings-input-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <rect x="5" y="10" width="14" height="10" rx="2"></rect>
+                                    <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+                                </svg>
+                                <input id="settings-new-password" name="nova_senha" type="password" autocomplete="new-password" minlength="10" maxlength="128" placeholder="Digite uma nova senha">
+                                <button class="settings-password-toggle" type="button" data-password-target="settings-new-password" aria-label="Mostrar nova senha" aria-pressed="false">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
+                                        <circle cx="12" cy="12" r="2.5"></circle>
+                                    </svg>
+                                </button>
+                            </div>
+                            <span class="settings-error" aria-live="polite"></span>
+                        </div>
+                        <div class="settings-field">
+                            <label for="settings-confirm-password">Confirmar nova senha</label>
+                            <div class="settings-input-group">
+                                <svg class="settings-input-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <rect x="5" y="10" width="14" height="10" rx="2"></rect>
+                                    <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+                                </svg>
+                                <input id="settings-confirm-password" name="confirmar_senha" type="password" autocomplete="new-password" placeholder="Repita a nova senha">
+                                <button class="settings-password-toggle" type="button" data-password-target="settings-confirm-password" aria-label="Mostrar confirmação da senha" aria-pressed="false">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
+                                        <circle cx="12" cy="12" r="2.5"></circle>
+                                    </svg>
+                                </button>
+                            </div>
+                            <span class="settings-error" aria-live="polite"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-field settings-current-password">
                     <label for="settings-current-password">Senha atual</label>
-                    <input id="settings-current-password" name="senha_atual" type="password" autocomplete="current-password" placeholder="Confirme sua senha para salvar" maxlength="128" required>
+                    <div class="settings-input-group">
+                        <svg class="settings-input-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 3 5 6v5c0 4.7 2.8 8.4 7 10 4.2-1.6 7-5.3 7-10V6l-7-3Z"></path>
+                            <path d="m9 12 2 2 4-4"></path>
+                        </svg>
+                        <input id="settings-current-password" name="senha_atual" type="password" autocomplete="current-password" placeholder="Digite sua senha atual" maxlength="128" required>
+                        <button class="settings-password-toggle" type="button" data-password-target="settings-current-password" aria-label="Mostrar senha atual" aria-pressed="false">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
+                                <circle cx="12" cy="12" r="2.5"></circle>
+                            </svg>
+                        </button>
+                    </div>
                     <span class="settings-error" aria-live="polite"></span>
                 </div>
 
                 <p class="settings-notice" id="settings-notice" role="status" hidden></p>
 
                 <div class="settings-actions">
+                    <button class="settings-save" type="submit">Salvar alteração</button>
                     <button class="settings-cancel" id="settings-cancel" type="button">Cancelar</button>
-                    <button class="settings-save" type="submit">Salvar alterações</button>
                 </div>
             </form>
+        </section>
+    </div>
+
+    <div class="account-feedback-modal" id="account-feedback-modal" role="dialog" aria-modal="true" aria-labelledby="account-feedback-title" aria-describedby="account-feedback-text" hidden>
+        <section class="account-feedback-dialog">
+            <button class="account-feedback-close" id="account-feedback-close" type="button" aria-label="Fechar aviso">&times;</button>
+            <span class="account-feedback-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <path d="m6 12 4 4 8-8"></path>
+                </svg>
+            </span>
+            <h2 id="account-feedback-title">Tudo certo!</h2>
+            <p id="account-feedback-text">Dados atualizados com sucesso.</p>
+            <button class="account-feedback-button" id="account-feedback-button" type="button">Entendi</button>
         </section>
     </div>
 </body>
