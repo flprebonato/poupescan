@@ -1,0 +1,36 @@
+services:
+  app:
+    image: poupescan:latest
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://poupescan:${POSTGRES_PASSWORD:-poupescan_dev}@db:5432/poupescan
+      AUTH_SECRET_KEY: ${AUTH_SECRET_KEY:-dev-secret-change-before-production-2026}
+      AUTH_TOKEN_MINUTES: ${AUTH_TOKEN_MINUTES:-480}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: cgr.dev/chainguard/postgres:latest
+    environment:
+      POSTGRES_DB: poupescan
+      POSTGRES_USER: poupescan
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-poupescan_dev}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations/001_create_usuarios.sql:/var/lib/postgres/initdb/poupescan-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U poupescan -d poupescan"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
