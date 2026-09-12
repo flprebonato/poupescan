@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Minha conta | PoupeScan</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <script src="js/dashboard.js" defer></script>
+</head>
+<body class="dashboard-page">
+    <header class="topbar">
+        <a class="brand" href="/app" aria-label="PoupeScan — página inicial">
+            <img src="assets/logo-poupescan.png" alt="">
+        </a>
+        <div class="topbar-actions">
+            <button class="account-button" id="settings-button" type="button">Minha Conta</button>
+            <button class="logout-button" id="logout-button" type="button">Sair</button>
+        </div>
+    </header>
+    <main class="dashboard">
+        <section class="dashboard-welcome">
+            <div class="welcome-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <path d="m7 12 3 3 7-7"></path>
+                </svg>
+            </div>
+            <span class="eyebrow">Área autenticada</span>
+            <h1>Olá, <span id="user-name">...</span>!</h1>
+            <p>Você já está autenticado e pode começar a utilizar o sistema.</p>
+        </section>
+    </main>
+
+    <div class="settings-modal" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
+        <section class="settings-dialog">
+            <button class="settings-close" id="settings-close" type="button" aria-label="Fechar configurações">&times;</button>
+            <div class="settings-heading">
+                <span class="settings-heading-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14.2 3h-4.1l-.3 2.7a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.4-1a7 7 0 0 0 2 1.2l.3 2.7h4.1l.3-2.7a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.5A7 7 0 0 0 19 12Z"></path>
+                    </svg>
+                </span>
+                <div>
+                    <h2 id="settings-title">Configurações da conta</h2>
+                    <p>Atualize seus dados pessoais e de acesso.</p>
+                </div>
+            </div>
+
+            <form id="settings-form" novalidate>
+                <div class="settings-grid">
+                    <div class="settings-field">
+                        <label for="settings-name">Nome</label>
+                        <input id="settings-name" name="nome" type="text" autocomplete="name" minlength="2" maxlength="120" required>
+                        <span class="settings-error" aria-live="polite"></span>
+                    </div>
+                    <div class="settings-field">
+                        <label for="settings-email">E-mail</label>
+                        <input id="settings-email" name="email" type="email" autocomplete="email" required>
+                        <span class="settings-error" aria-live="polite"></span>
+                    </div>
+                    <div class="settings-field">
+                        <label for="settings-new-password">Nova senha <small>(opcional)</small></label>
+                        <input id="settings-new-password" name="nova_senha" type="password" autocomplete="new-password" minlength="10" maxlength="128" placeholder="Mínimo de 10 caracteres">
+                        <span class="settings-error" aria-live="polite"></span>
+                    </div>
+                    <div class="settings-field">
+                        <label for="settings-confirm-password">Confirmar nova senha</label>
+                        <input id="settings-confirm-password" name="confirmar_senha" type="password" autocomplete="new-password" placeholder="Repita a nova senha">
+                        <span class="settings-error" aria-live="polite"></span>
+                    </div>
+                </div>
+
+                <div class="settings-separator"></div>
+
+                <div class="settings-field">
+                    <label for="settings-current-password">Senha atual</label>
+                    <input id="settings-current-password" name="senha_atual" type="password" autocomplete="current-password" placeholder="Confirme sua senha para salvar" maxlength="128" required>
+                    <span class="settings-error" aria-live="polite"></span>
+                </div>
+
+                <p class="settings-notice" id="settings-notice" role="status" hidden></p>
+
+                <div class="settings-actions">
+                    <button class="settings-cancel" id="settings-cancel" type="button">Cancelar</button>
+                    <button class="settings-save" type="submit">Salvar alterações</button>
+                </div>
+            </form>
+        </section>
+    </div>
+</body>
+</html>

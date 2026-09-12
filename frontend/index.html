@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | PoupeScan</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/auth.css">
+    <script src="js/auth.js" defer></script>
+</head>
+<body class="auth-page">
+    <main class="page">
+        <h1 class="logo">
+            <img src="assets/logo-poupescan.png" alt="PoupeScan">
+        </h1>
+
+        <section class="auth-box" id="auth-box">
+            <div class="forms">
+                <section class="form-panel login-panel">
+                    <form id="login-form">
+                        <h2>Faça login na sua conta</h2>
+                        <p>Informe suas credenciais para continuar.</p>
+
+                        <label for="login-email">E-mail</label>
+                        <div class="input-group">
+                            <svg class="input-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+                                <path d="m4 7 8 6 8-6"></path>
+                            </svg>
+                            <input id="login-email" name="email" type="email" placeholder="Digite seu e-mail" autocomplete="email" required>
+                        </div>
+
+                        <label for="login-password">Senha</label>
+                        <div class="input-group">
+                            <svg class="input-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <rect x="5" y="10" width="14" height="10" rx="2"></rect>
+                                <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+                            </svg>
+                            <input id="login-password" name="senha" type="password" placeholder="Digite sua senha" autocomplete="current-password" required>
+                            <button class="password-toggle" type="button" data-password-target="login-password" aria-label="Mostrar senha" aria-pressed="false">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
+                                    <circle cx="12" cy="12" r="2.5"></circle>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <button class="primary-button" type="submit">Entrar</button>
+
+                        <button class="mobile-link" id="mobile-show-register" type="button">
+                            Ainda não tem conta? Cadastre-se
+                        </button>
+                    </form>
+                </section>
+
+                <section class="form-panel register-panel">
+                    <form id="register-form">
+                        <h2>Criar conta</h2>
+                        <p>Insira seus dados para realizar seu cadastro.</p>
+
+                        <label for="register-name">Nome</label>
+                        <div class="input-group">
+                            <svg class="input-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="8" r="4"></circle>
+                                <path d="M4 21a8 8 0 0 1 16 0"></path>
+                            </svg>
+                            <input id="register-name" name="nome" type="text" placeholder="Digite seu nome" autocomplete="name" minlength="2" maxlength="120" required>
+                        </div>
+
+                        <label for="register-email">E-mail</label>
+                        <div class="input-group">
+                            <svg class="input-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+                                <path d="m4 7 8 6 8-6"></path>
+                            </svg>
+                            <input id="register-email" name="email" type="email" placeholder="Digite seu e-mail" autocomplete="email" required>
+                        </div>
+
+                        <label class="label-with-hint" for="register-password">
+                            <span>Senha</span>
+                            <span class="field-hint">Mínimo 10 caracteres</span>
+                        </label>
+                        <div class="input-group">
+                            <svg class="input-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <rect x="5" y="10" width="14" height="10" rx="2"></rect>
+                                <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+                            </svg>
+                            <input id="register-password" name="senha" type="password" placeholder="Digite uma senha" autocomplete="new-password" minlength="10" maxlength="128" required>
+                            <button class="password-toggle" type="button" data-password-target="register-password" aria-label="Mostrar senha" aria-pressed="false">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
+                                    <circle cx="12" cy="12" r="2.5"></circle>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <label for="captcha-answer">Verificação</label>
+                        <div class="input-group captcha-group">
+                            <svg class="input-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 3 5 6v5c0 4.7 2.8 8.4 7 10 4.2-1.6 7-5.3 7-10V6l-7-3Z"></path>
+                                <path d="m9 12 2 2 4-4"></path>
+                            </svg>
+                            <input id="captcha-answer" name="captcha_resposta" type="number" placeholder="Carregando verificação..." min="0" max="100" required>
+                            <button class="captcha-refresh" id="captcha-refresh" type="button" aria-label="Gerar outro CAPTCHA">↻</button>
+                        </div>
+                        <input id="captcha-token" name="captcha_token" type="hidden">
+
+                        <button class="primary-button" type="submit">Registrar</button>
+
+                        <button class="mobile-link" id="mobile-show-login" type="button">
+                            Já tem uma conta? Faça login
+                        </button>
+                    </form>
+                </section>
+            </div>
+
+            <aside class="side-panel">
+                <div class="side-content side-register">
+                    <h2>Ainda não tem conta?</h2>
+                    <p>Cadastre-se para começar a utilizar.</p>
+                    <button class="secondary-button" id="show-register" type="button">Criar conta</button>
+                </div>
+
+                <div class="side-content side-login">
+                    <h2>Já possui cadastro?</h2>
+                    <p>Entre com seu e-mail e sua senha.</p>
+                    <button class="secondary-button" id="show-login" type="button">Fazer login</button>
+                </div>
+            </aside>
+        </section>
+    </main>
+
+    <div class="feedback-modal" id="feedback-modal" role="dialog" aria-modal="true" aria-labelledby="feedback-title" aria-describedby="feedback-text" hidden>
+        <div class="feedback-card" id="feedback-card">
+            <button class="feedback-close" id="feedback-close" type="button" aria-label="Fechar aviso">&times;</button>
+            <div class="feedback-icon" aria-hidden="true"></div>
+            <h2 id="feedback-title"></h2>
+            <p id="feedback-text"></p>
+            <div class="feedback-actions">
+                <button class="feedback-cancel" id="feedback-cancel" type="button" hidden>Agora não</button>
+                <button class="feedback-button" id="feedback-button" type="button">Entendi</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

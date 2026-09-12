@@ -1,0 +1,30 @@
+:root {
+    --navy: #123247;
+    --text: #58707c;
+    --green: #25a18e;
+    --green-dark: #178272;
+    --green-light: #e3f6f1;
+    --border: #d8e6e3;
+    --background: #edf6f4;
+    --white: #fff;
+    --danger: #b93648;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    color: var(--navy);
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+button, input { font: inherit; }
+button { cursor: pointer; }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
