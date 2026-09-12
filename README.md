@@ -11,7 +11,7 @@ O nome **PoupeScan** representa justamente a proposta da solução:
 
 A ideia é transformar informações que antes ficavam apenas registradas em notas e recibos em **dados úteis**, capazes de auxiliar o usuário na tomada de decisões de compra.
 
-## Objetivo
+# Objetivo
 
 O PoupeScan facilita a consulta e a análise do histórico de compras, permitindo:
 
@@ -24,7 +24,7 @@ O PoupeScan facilita a consulta e a análise do histórico de compras, permitind
 
 Dessa forma, o usuário consegue utilizar seu próprio histórico de consumo para tomar decisões.
 
-## Estrutura
+# Estrutura
 
 Fluxo completo de cadastro e login com FastAPI, PostgreSQL e uma interface responsiva em HTML, CSS e JavaScript.
 
