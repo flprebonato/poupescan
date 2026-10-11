@@ -3,7 +3,7 @@ from collections.abc import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-from backend.app.config import settings
+from backend.app.core.config import settings
 
 
 class Base(DeclarativeBase):

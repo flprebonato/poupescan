@@ -10,9 +10,9 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from backend.app.database import Base, get_db
+from backend.app.database.session import Base, get_db
 from backend.app.main import app
-from backend.app.models import Usuario
+from backend.app.database.models import Usuario
 
 
 test_engine = create_engine(

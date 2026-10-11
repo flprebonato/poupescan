@@ -9,7 +9,7 @@ from jwt import InvalidTokenError
 from pwdlib import PasswordHash
 from pwdlib.exceptions import UnknownHashError
 
-from backend.app.config import settings
+from backend.app.core.config import settings
 
 
 ALGORITHM = "HS256"

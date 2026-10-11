@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Minha conta | PoupeScan</title>
+    <link rel="stylesheet" href="css/central.css">
+    <script src="js/central.js" defer></script>
+</head>
+<body class="dashboard-page">
+    <header class="topbar">
+        <a class="brand" href="/app" aria-label="PoupeScan — página inicial">
+            <img src="assets/logo-poupescan.png" alt="">
+        </a>
+        <div class="topbar-actions">
+            <a class="account-button home-button" href="#despesas">Início</a>
+            <button class="account-button" id="settings-button" type="button">Minha Conta</button>
+            <button class="logout-button" id="logout-button" type="button">Sair</button>
+        </div>
+    </header>
+    <main class="dashboard">
+        <section class="dashboard-welcome">
+            <div class="welcome-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <path d="m7 12 3 3 7-7"></path>
+                </svg>
+            </div>
+            <span class="eyebrow">Área autenticada</span>
+            <h1>Olá, <span id="user-name">...</span>!</h1>
+            <p>Você está autenticado e pode começar a utilizar o sistema.</p>
+        </section>
+        <section id="expense-history" class="expense-card" aria-labelledby="history-title">
+            <div class="expense-heading"><div><span class="section-kicker">Seu histórico</span><h2 id="history-title">Minhas despesas</h2></div><a class="expense-button" href="#nova-despesa">+ Nova despesa</a></div>
+            <p id="history-notice" class="expense-notice" role="status" hidden></p>
+            <div id="history-list" aria-live="polite"></div>
+            <div class="expense-actions"><button id="history-retry" class="expense-button secondary" type="button" hidden>Tentar novamente</button><button id="history-more" class="expense-button secondary" type="button" hidden>Carregar mais</button></div>
+        </section>
+        <section id="expense-create" hidden aria-labelledby="create-title">
+            
+            <div class="expense-heading"><div><h1 id="create-title" tabindex="-1">Nova despesa</h1><p>Envie a imagem e confira os dados antes de salvar.</p></div></div>
+            <ol class="expense-steps" aria-label="Etapas do cadastro"><li aria-current="step"><span>1</span> Enviar comprovante</li><li><span>2</span> Conferir dados</li><li><span>3</span> Salvar despesa</li></ol>
+            <p id="expense-notice" class="expense-notice" role="alert" hidden></p>
+            <section id="receipt-upload" class="expense-card">
+                <h2>Envie seu comprovante</h2><p class="muted">Uma foto nítida, com todos os itens e valores visíveis, facilita a leitura.</p>
+                <label id="receipt-drop" class="receipt-drop" for="receipt-file"><span class="upload-symbol" aria-hidden="true">↑</span><strong>Selecione ou arraste uma imagem</strong><span>JPG ou PNG · até 10 MB</span><input id="receipt-file" type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png"></label>
+                <div id="receipt-selection" hidden><img id="receipt-preview" alt="Pré-visualização do comprovante selecionado"><div><strong id="receipt-filename"></strong><p id="receipt-filesize" class="muted"></p><button id="receipt-replace" class="expense-button secondary" type="button">Substituir</button> <button id="receipt-remove" class="expense-button secondary" type="button">Remover</button></div></div>
+                <div class="expense-actions"><span id="scan-progress" class="muted" role="status" hidden><span class="expense-spinner" aria-hidden="true"></span> Lendo o comprovante. Isso pode levar alguns minutos.</span><button id="receipt-scan" class="expense-button" type="button" disabled>Enviar</button></div>
+            </section>
+            <form id="expense-review" hidden novalidate>
+                <div class="review-intro"><p>Confira os dados com a imagem. Campos em amarelo não foram identificados ou precisam de revisão. Os campos com * são obrigatórios.</p><button id="receipt-back" class="expense-button secondary" type="button">Trocar comprovante</button></div>
+                <div class="expense-card"><button id="receipt-view" class="receipt-view" type="button" aria-haspopup="dialog" aria-controls="receipt-modal">Clique aqui para ver a imagem do comprovante enviado</button></div>
+                <section class="expense-card" id="store-card"><h2>Estabelecimento</h2>
+                    <p class="muted">Informe o CNPJ e os dados serão preenchidos por meio da consulta à API externa.</p>
+                    <div class="expense-fields store-fields">
+                        <div class="expense-field"><label for="exp-cnpj">CNPJ *</label><input id="exp-cnpj" data-field="cnpj" type="text" inputmode="numeric" required maxlength="18" placeholder="00.000.000/0000-00" aria-describedby="error-cnpj"><span id="error-cnpj" class="expense-error"></span></div>
+                        <div class="expense-field store-wide"><label for="exp-estabelecimento">Nome</label><input id="exp-estabelecimento" type="text" readonly placeholder="Preenchido pelo CNPJ"></div>
+                    </div>
+                    <div class="cnpj-feedback"><p id="cnpj-status" class="expense-notice info" role="status"></p><button id="cnpj-retry" class="expense-button secondary" type="button" hidden>Consultar novamente</button></div>
+                    <div class="expense-fields store-fields">
+                        <div class="expense-field store-wide"><label for="exp-logradouro">Logradouro</label><input id="exp-logradouro" data-address="logradouro" type="text" readonly placeholder="Não informado no cadastro"></div>
+                        <div class="expense-field"><label for="exp-numero">Número</label><input id="exp-numero" data-address="numero" type="text" readonly placeholder="Não informado no cadastro"></div>
+                        <div class="expense-field"><label for="exp-complemento">Complemento</label><input id="exp-complemento" data-address="complemento" type="text" readonly placeholder="Não informado no cadastro"></div>
+                        <div class="expense-field"><label for="exp-bairro">Bairro</label><input id="exp-bairro" data-address="bairro" type="text" readonly placeholder="Não informado no cadastro"></div>
+                        <div class="expense-field"><label for="exp-cep">CEP</label><input id="exp-cep" data-address="cep" type="text" readonly placeholder="Não informado no cadastro"></div>
+                        <div class="expense-field store-wide"><label for="exp-municipio">Cidade</label><input id="exp-municipio" data-address="municipio" type="text" readonly placeholder="Não informado no cadastro"></div>
+                        <div class="expense-field"><label for="exp-uf">UF</label><input id="exp-uf" data-address="uf" type="text" readonly placeholder="Não informado no cadastro"></div>
+                    </div>
+                </section>
+                <section class="expense-card"><h2>Despesa</h2><div class="expense-fields"><div class="expense-field"><label for="exp-data_despesa">Data *</label><input id="exp-data_despesa" data-field="data_despesa" type="date" required aria-describedby="error-data_despesa"><span id="error-data_despesa" class="expense-error"></span></div>
+<div class="expense-field"><label for="exp-hora_despesa">Hora</label><input id="exp-hora_despesa" data-field="hora_despesa" type="time" step="1" aria-describedby="error-hora_despesa"><span id="error-hora_despesa" class="expense-error"></span></div>
+<div class="expense-field"><label for="exp-valor_total">Total antes dos descontos (R$) *</label><input id="exp-valor_total" data-field="valor_total" type="text" data-money="2" inputmode="decimal" required aria-describedby="error-valor_total"><span id="error-valor_total" class="expense-error"></span></div>
+<div class="expense-field"><label for="exp-desconto_total">Desconto total (R$)</label><input id="exp-desconto_total" data-field="desconto_total" type="text" data-money="2" inputmode="decimal" aria-describedby="error-desconto_total"><span id="error-desconto_total" class="expense-error"></span></div>
+<div class="expense-field"><label for="exp-valor_pago">Valor a pagar / pago (R$)</label><input id="exp-valor_pago" data-field="valor_pago" type="text" data-money="2" inputmode="decimal" aria-describedby="error-valor_pago"><span id="error-valor_pago" class="expense-error"></span></div>
+<div class="expense-field"><label for="exp-forma_pagamento">Forma de pagamento</label><input id="exp-forma_pagamento" data-field="forma_pagamento" type="text" maxlength="80" aria-describedby="error-forma_pagamento"><span id="error-forma_pagamento" class="expense-error"></span></div>
+<div class="expense-field"><label for="exp-documento_tipo">Tipo do documento</label><input id="exp-documento_tipo" data-field="documento_tipo" type="text" maxlength="50" aria-describedby="error-documento_tipo"><span id="error-documento_tipo" class="expense-error"></span></div>
+<div class="expense-field"><label for="exp-documento_chave">Chave de acesso</label><input id="exp-documento_chave" data-field="documento_chave" type="text" maxlength="60" aria-describedby="error-documento_chave"><span id="error-documento_chave" class="expense-error"></span></div></div></section>
+                <section class="expense-card"><div class="expense-heading"><div><h2>Itens do comprovante</h2><p class="muted">A descrição original da leitura será preservada no histórico.</p></div><button id="item-add" class="expense-button secondary" type="button">+ Adicionar item</button></div>
+                    <div class="expense-table-scroll" tabindex="0" role="region" aria-label="Itens editáveis do comprovante"><table class="expense-table item-editor"><thead><tr><th>Código</th><th>Descrição *</th><th>Quantidade *</th><th>Unidade</th><th>Preço unitário *</th><th>Desconto</th><th>Total após desconto</th><th aria-label="Remover item"></th></tr></thead><tbody id="expense-items"></tbody></table></div>
+                    <p id="calculation-notice" class="expense-notice info" role="status" hidden></p>
+                    <p id="items-empty" class="expense-notice" hidden>Adicione pelo menos um item.</p><p id="items-warning" class="expense-notice warning" role="status" hidden></p>
+                </section>
+                <div class="expense-savebar"><span class="muted">A imagem será salva junto com a despesa após sua confirmação.</span><button id="expense-save" class="expense-button" type="submit">Salvar despesa</button></div>
+            </form>
+        </section>
+        <section id="expense-detail" class="expense-card" hidden aria-labelledby="detail-title"><h1 id="detail-title" tabindex="-1">Detalhes da despesa</h1><p id="detail-notice" class="expense-notice" role="status" hidden></p><div id="detail-content"></div><div class="expense-actions"><a class="expense-button" href="#nova-despesa">Enviar outro comprovante</a><button id="expense-delete" class="expense-button danger" type="button">Excluir despesa</button></div></section>
+    </main>
+
+    <dialog id="receipt-modal" class="receipt-modal" aria-labelledby="receipt-modal-title">
+        <div class="receipt-modal-heading">
+            <h2 id="receipt-modal-title">Comprovante enviado</h2>
+            <div class="receipt-modal-actions">
+                <button id="receipt-zoom" class="expense-button secondary receipt-icon-button" type="button" aria-pressed="false" aria-label="Ampliar imagem" title="Ampliar imagem"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 5 5"></path></svg></button>
+                <button id="receipt-modal-close" class="expense-button secondary receipt-icon-button" type="button" aria-label="Fechar imagem do comprovante" title="Fechar imagem do comprovante" autofocus><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg></button>
+            </div>
+        </div>
+        <div id="receipt-modal-content" class="receipt-modal-content" tabindex="0" role="region" aria-label="Imagem do comprovante">
+            <img id="review-preview" alt="Comprovante original para conferência">
+        </div>
+    </dialog>
+
+    <div class="settings-modal" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
+        <section class="settings-dialog">
+            <button class="settings-close" id="settings-close" type="button" aria-label="Fechar configurações">&times;</button>
+            <div class="settings-heading">
+                <div>
+                    <h2 id="settings-title">Configurações da conta</h2>
+                    <p>Atualize seus dados pessoais e de acesso.</p>
+                </div>
+            </div>
+
+            <form id="settings-form" novalidate>
+                <div class="settings-grid">
+                    <div class="settings-field">
+                        <label for="settings-name">Nome</label>
+                        <div class="settings-input-group">
+                            <svg class="settings-input-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="8" r="4"></circle>
+                                <path d="M4 21a8 8 0 0 1 16 0"></path>
+                            </svg>
+                            <input id="settings-name" name="nome" type="text" autocomplete="name" minlength="2" maxlength="120" placeholder="Digite seu nome" required>
+                        </div>
+                        <span class="settings-error" aria-live="polite"></span>
+                    </div>
+                    <div class="settings-field">
+                        <label for="settings-email">E-mail</label>
+                        <div class="settings-input-group">
+                            <svg class="settings-input-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+                                <path d="m4 7 8 6 8-6"></path>
+                            </svg>
+                            <input id="settings-email" name="email" type="email" autocomplete="email" placeholder="Digite seu e-mail" required>
+                        </div>
+                        <span class="settings-error" aria-live="polite"></span>
+                    </div>
+                </div>
+
+                <div class="settings-password-section">
+                    <button class="settings-password-trigger" id="settings-password-trigger" type="button" aria-expanded="false" aria-controls="settings-password-fields">
+                        <svg class="settings-password-trigger-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <rect x="5" y="10" width="14" height="10" rx="2"></rect>
+                            <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+                        </svg>
+                        <span>Alterar senha</span>
+                        <svg class="settings-password-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m8 10 4 4 4-4"></path>
+                        </svg>
+                    </button>
+
+                    <div class="settings-password-fields" id="settings-password-fields" hidden>
+                        <div class="settings-field">
+                            <label class="settings-label-with-hint" for="settings-new-password">
+                                <span>Nova senha</span>
+                                <span class="settings-field-hint">Mínimo 10 caracteres</span>
+                            </label>
+                            <div class="settings-input-group">
+                                <svg class="settings-input-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <rect x="5" y="10" width="14" height="10" rx="2"></rect>
+                                    <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+                                </svg>
+                                <input id="settings-new-password" name="nova_senha" type="password" autocomplete="new-password" minlength="10" maxlength="128" placeholder="Digite uma nova senha">
+                                <button class="settings-password-toggle" type="button" data-password-target="settings-new-password" aria-label="Mostrar nova senha" aria-pressed="false">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
+                                        <circle cx="12" cy="12" r="2.5"></circle>
+                                    </svg>
+                                </button>
+                            </div>
+                            <span class="settings-error" aria-live="polite"></span>
+                        </div>
+                        <div class="settings-field">
+                            <label for="settings-confirm-password">Confirmar nova senha</label>
+                            <div class="settings-input-group">
+                                <svg class="settings-input-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <rect x="5" y="10" width="14" height="10" rx="2"></rect>
+                                    <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+                                </svg>
+                                <input id="settings-confirm-password" name="confirmar_senha" type="password" autocomplete="new-password" placeholder="Repita a nova senha">
+                                <button class="settings-password-toggle" type="button" data-password-target="settings-confirm-password" aria-label="Mostrar confirmação da senha" aria-pressed="false">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
+                                        <circle cx="12" cy="12" r="2.5"></circle>
+                                    </svg>
+                                </button>
+                            </div>
+                            <span class="settings-error" aria-live="polite"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-field settings-current-password">
+                    <label for="settings-current-password">Senha atual</label>
+                    <div class="settings-input-group">
+                        <svg class="settings-input-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 3 5 6v5c0 4.7 2.8 8.4 7 10 4.2-1.6 7-5.3 7-10V6l-7-3Z"></path>
+                            <path d="m9 12 2 2 4-4"></path>
+                        </svg>
+                        <input id="settings-current-password" name="senha_atual" type="password" autocomplete="current-password" placeholder="Digite sua senha atual" maxlength="128" required>
+                        <button class="settings-password-toggle" type="button" data-password-target="settings-current-password" aria-label="Mostrar senha atual" aria-pressed="false">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
+                                <circle cx="12" cy="12" r="2.5"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                    <span class="settings-error" aria-live="polite"></span>
+                </div>
+
+                <p class="settings-notice" id="settings-notice" role="status" hidden></p>
+
+                <div class="settings-actions">
+                    <button class="settings-save" type="submit">Salvar alteração</button>
+                    <button class="settings-cancel" id="settings-cancel" type="button">Cancelar</button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <div class="account-feedback-modal" id="account-feedback-modal" role="dialog" aria-modal="true" aria-labelledby="account-feedback-title" aria-describedby="account-feedback-text" hidden>
+        <section class="account-feedback-dialog">
+            <button class="account-feedback-close" id="account-feedback-close" type="button" aria-label="Fechar aviso">&times;</button>
+            <span class="account-feedback-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <path d="m6 12 4 4 8-8"></path>
+                </svg>
+            </span>
+            <h2 id="account-feedback-title">Tudo certo!</h2>
+            <p id="account-feedback-text">Dados atualizados com sucesso.</p>
+            <button class="account-feedback-button" id="account-feedback-button" type="button">Entendi</button>
+        </section>
+    </div>
+</body>
+</html>
