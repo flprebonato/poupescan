@@ -652,8 +652,8 @@ carregarUsuario().catch(() => window.location.replace(apiBaseUrl || '/'));
         return input.value !== '' && input.validity.valid ? Number(input.value) : null;
     }
 
-    function calculated(input, value, replace = false) {
-        if ((!replace && input.value !== '') || value === null || !Number.isFinite(value) || value < 0 || value > 999999999999.99) return;
+    function calculated(input, value) {
+        if (input.value !== '' || value === null || !Number.isFinite(value) || value < 0 || value > 999999999999.99) return;
         setValue(input, cents(value) / 100);
         input.dataset.calculated = 'true';
         inputError(input, '');
@@ -671,8 +671,9 @@ carregarUsuario().catch(() => window.location.replace(apiBaseUrl || '/'));
         const rows = [...itemBody.children];
         const totalValue = amount($('#exp-valor_total'));
         const paidValue = amount($('#exp-valor_pago'));
-        const globalDiscount = totalValue !== null && paidValue !== null
-            ? cents(totalValue) - cents(paidValue) : cents(amount($('#exp-desconto_total')) || 0);
+        const readDiscount = amount($('#exp-desconto_total'));
+        const globalDiscount = readDiscount !== null ? cents(readDiscount)
+            : totalValue !== null && paidValue !== null ? cents(totalValue) - cents(paidValue) : 0;
         const identifiedDiscounts = rows.reduce((sum, row) => {
             const input = key => row.querySelector(`[data-item-field="${key}"]`);
             const discount = amount(input('desconto'));
@@ -722,7 +723,7 @@ carregarUsuario().catch(() => window.location.replace(apiBaseUrl || '/'));
             const total = amount(totalInput);
             if (total !== null && Math.abs(sum - cents(total)) <= 1) {
                 const paid = amount(paidInput);
-                if (paid !== null) calculated(discountInput, (cents(total) - cents(paid)) / 100, true);
+                if (paid !== null) calculated(discountInput, (cents(total) - cents(paid)) / 100);
                 else if (allDiscounts) calculated(discountInput, discounts / 100);
                 const discount = amount(discountInput);
                 if (discount !== null && cents(discount) + 1 >= discounts) {
@@ -734,7 +735,7 @@ carregarUsuario().catch(() => window.location.replace(apiBaseUrl || '/'));
         }
         const total = amount(totalInput);
         const paid = amount(paidInput);
-        if (total !== null && paid !== null && !paidInput.dataset.calculated) calculated(discountInput, (cents(total) - cents(paid)) / 100, true);
+        if (complete && !warning && total !== null && paid !== null) calculated(discountInput, (cents(total) - cents(paid)) / 100);
         const discount = amount(discountInput);
         if (total !== null && discount !== null) {
             if (cents(discount) > cents(total) || cents(discount) + 1 < discounts) {

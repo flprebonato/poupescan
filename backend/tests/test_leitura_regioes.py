@@ -1,6 +1,7 @@
 import asyncio
 import base64
 from io import BytesIO
+from pathlib import Path
 import json
 
 import httpx
@@ -212,7 +213,8 @@ def test_confere_descontos_mesmo_com_total_bruto_correto(foto, monkeypatch, modo
                          'itens': itens})
     simular(monkeypatch, handler)
     data = asyncio.run(reader.analisar_comprovante(foto))
-    assert chamadas == ['ComprovanteLido', 'DescontosLidos', 'DescontosLidos', 'ItensLidos']
+    assert chamadas == ['ComprovanteLido', 'DescontosLidos', 'DescontosLidos', 'ItensLidos'] + (
+        [] if modo == 'recuperados' else ['LinhasTranscritas'])
     if modo == 'recuperados':
         assert not data.get('avisos_leitura')
         assert sum(item['preco_total'] for item in data['itens']) == pytest.approx(243.90)
@@ -308,7 +310,8 @@ def test_le_descontos_quando_primeira_tabela_esta_incompleta(foto, monkeypatch, 
                          'itens': [produto]})
     simular(monkeypatch, handler)
     data = asyncio.run(reader.analisar_comprovante(foto))
-    assert chamadas == ['ComprovanteLido', 'ItensLidos', 'TotaisImpressos', 'DescontosLidos', 'DescontosLidos']
+    assert chamadas == ['ComprovanteLido', 'ItensLidos', 'TotaisImpressos', 'DescontosLidos', 'DescontosLidos'] + (
+        [] if recupera_produtos else ['LinhasTranscritas'])
     assert data['itens'][0]['desconto'] == 2
     assert data['itens'][0]['preco_total'] == 8
     assert len(data['itens']) == (2 if recupera_produtos else 1)
@@ -376,4 +379,71 @@ def test_nao_substitui_total_bruto_explicitamente_impresso():
     assert reader.reconciliar_totais_impressos(itens, {
         'rotulo_total_bruto':'Total bruto', 'total_bruto_impresso':200,
         'valor_a_pagar_impresso':187.63,'desconto_total_impresso':9.50,
+    }) is None
+
+
+def transcricao_carone():
+    return (Path(__file__).parent / 'fixtures' / 'cupom_linhas.txt').read_text().splitlines()
+
+
+@pytest.mark.parametrize('modo', ['correta', 'desconto_invertido', 'peso_errado', 'incompleta', 'descontos_omitidos', 'timeout'])
+def test_transcricao_confere_colunas_antes_de_substituir_leitura(foto, monkeypatch, modo):
+    chamadas = []
+    originais = itens_carone()
+    # Reproduz as confusões vistas na tela, antes dos cálculos da interface.
+    for i in (2, 3):
+        originais[i].update(desconto=13.98, preco_total=2)
+    originais[4].update(quantidade=1, desconto=13.42, preco_total=None)
+    originais[5].update(quantidade=1, desconto=34.16, preco_total=None)
+    originais[8].update(desconto=2.89, preco_total=0)
+    originais[9].update(desconto=5.58, preco_total=None)
+    originais[10].update(desconto=10.78, preco_total=0)
+
+    def handler(request):
+        etapa = json.loads(request.content)['format']['title']
+        chamadas.append(etapa)
+        if etapa == 'LinhasTranscritas':
+            if modo == 'timeout':
+                raise httpx.ReadTimeout('simulado', request=request)
+            itens = transcricao_carone()
+            if modo == 'desconto_invertido':
+                itens[3] = 'DESCONTO 12,52% R$ -13,98 2,00'
+            elif modo == 'peso_errado':
+                itens[6] = itens[6].replace('0,224KG', '1KG')
+            elif modo == 'incompleta':
+                itens.pop()
+            elif modo == 'descontos_omitidos':
+                itens = [linha for linha in itens if not linha.startswith('DESCONTO')]
+            return resposta({'linhas': itens})
+        if etapa == 'TotaisImpressos':
+            return resposta({'rotulo_total_bruto': 'Valor a Pagar', 'total_bruto_impresso': 187.63,
+                             'valor_a_pagar_impresso': 187.63, 'desconto_total_impresso': 9.50,
+                             'quantidade_itens_impressa': 11})
+        return resposta({'cnpj': '11222333000181', 'data_despesa': '2026-09-19',
+                         'hora_despesa': '16:05:43', 'forma_pagamento': 'Cartão',
+                         'valor_total': 187.63, 'valor_pago': 187.63, 'desconto_total': 0,
+                         'itens': originais})
+
+    simular(monkeypatch, handler)
+    data = asyncio.run(reader.analisar_comprovante(foto))
+    assert 'LinhasTranscritas' in chamadas
+    if modo == 'correta':
+        assert (data['valor_total'], data['desconto_total'], data['valor_pago']) == (197.13, 9.50, 187.63)
+        assert 'valor_total' in data['campos_calculados']
+        assert [item['desconto'] for item in data['itens']] == [0, 0, 2, 2, 0, 0, 1.8, 1.5, 0, 2.2, 0]
+        assert [item['quantidade'] for item in data['itens']][4:6] == [0.224, 0.380]
+        assert [item['preco_total'] for item in data['itens']][4:6] == [13.42, 34.16]
+        assert sum(item['preco_total'] for item in data['itens']) == pytest.approx(187.63)
+        assert not data.get('avisos_leitura')
+    else:
+        assert data['valor_total'] == 187.63
+        assert data['itens'][2]['desconto'] == 13.98
+        assert data.get('avisos_leitura')
+
+
+def test_quantidade_impressa_impede_aceitar_tabela_incompleta():
+    itens = reader.normalizar_itens_lidos(itens_carone())
+    assert reader.reconciliar_totais_impressos(itens, {
+        'valor_a_pagar_impresso': 187.63, 'desconto_total_impresso': 9.50,
+        'quantidade_itens_impressa': 12,
     }) is None

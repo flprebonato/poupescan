@@ -161,6 +161,10 @@ class ItensLidos(BaseModel):
     itens: list[ItemLido] = Field(default_factory=list, max_length=500)
 
 
+class LinhasTranscritas(BaseModel):
+    linhas: list[str] = Field(default_factory=list, max_length=1500)
+
+
 class DescontoLido(BaseModel):
     codigo: str | None = None
     descricao: str | None = None
@@ -182,6 +186,7 @@ class TotaisImpressos(BaseModel):
     total_bruto_impresso: float | None = None
     desconto_total_impresso: float | None = None
     valor_a_pagar_impresso: float | None = None
+    quantidade_itens_impressa: int | None = Field(default=None, ge=1, le=500)
 
     @field_validator("data_despesa", mode="before")
     @classmethod

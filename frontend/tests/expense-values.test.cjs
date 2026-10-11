@@ -42,7 +42,8 @@ assert(items.map(item=>item.desconto.value).join('|') === first, 'Recalcular nã
 // Um desconto geral maior não pode criar descontos individuais.
 setValue(controls['#exp-valor_pago'], 240); updateTotals();
 assert(sum('desconto') === 654, 'Desconto geral não pode ser rateado');
-assert(notices['#calculation-notice'].includes('não foi identificado'), 'Avisar quando faltam descontos por item');
+assert(amount(controls['#exp-desconto_total']) === 6.54, 'Não substituir desconto total lido');
+assert(totalsMismatch, 'Pagamento divergente exige revisão, não recalcular desconto lido');
 // Uma leitura contraditória deve solicitar revisão, preservando o desconto lido.
 setValue(items[1].preco_total, 9.79); delete items[1].preco_total.dataset.calculated;
 updateTotals();
@@ -66,5 +67,36 @@ for (const invalid of ['-1,00','abc','1,234','1.23,45','1,2,3']) {
     currency.value = invalid;
     assert(monetaryValue(currency) === null, 'Rejeitar valor inválido: '+invalid);
 }
+// Cupom com cinco descontos, dois produtos por peso e total bruto calculado.
+const receipt = [
+    [1,19.99,0,19.99], [2,29.59,0,59.18], [2,7.99,2,13.98], [2,7.99,2,13.98],
+    [0.224,59.90,0,13.42], [0.380,89.90,0,34.16], [1,7.98,1.80,6.18],
+    [1,8.99,1.50,7.49], [1,2.89,0,2.89], [2,3.89,2.20,5.58], [2,5.39,0,10.78],
+];
+items.splice(0, items.length, ...receipt.map(([quantity,price,discount,net],i) => ({
+    unidade:field(i === 4 || i === 5 ? 'KG' : 'UN',0), quantidade:field(quantity,0),
+    preco_unitario:field(price,4), desconto:field(discount), preco_total:field(net),
+})));
+itemBody.children = items.map(item=>({querySelector:selector=>item[selector.split('"')[1]]}));
+Object.values(controls).forEach(input=>{ if (input.dataset) delete input.dataset.calculated; });
+setValue(controls['#exp-valor_total'],197.13);
+controls['#exp-valor_total'].dataset.calculated = 'true';
+setValue(controls['#exp-desconto_total'],9.50);
+setValue(controls['#exp-valor_pago'],187.63);
+updateTotals(); updateTotals();
+assert(!totalsMismatch, 'Cupom com pesos e descontos deve conferir');
+assert(amount(controls['#exp-valor_total']) === 197.13, 'Bruto é a soma dos produtos, não o pagamento');
+assert(amount(controls['#exp-desconto_total']) === 9.50, 'Preservar desconto total de R$ 9,50');
+assert(sum('preco_total') === 18763, 'Líquido deve fechar em R$ 187,63');
+assert(amount(items[4].quantidade) === 0.224 && amount(items[5].quantidade) === 0.380, 'Preservar pesos decimais');
+// A leitura confundiu bruto e pagamento: não apagar o desconto impresso.
+delete controls['#exp-valor_total'].dataset.calculated;
+setValue(controls['#exp-valor_total'],187.63);
+updateTotals();
+assert(totalsMismatch, 'Bruto incorreto deve exigir revisão');
+assert(amount(controls['#exp-desconto_total']) === 9.50, 'Não zerar o desconto ao confundir bruto com pago');
+setValue(controls['#exp-desconto_total'],null);
+updateTotals();
+assert(amount(controls['#exp-desconto_total']) === null, 'Não calcular desconto zero de totais incoerentes');
 `)();
 console.log('Descontos impressos, ausência de rateio, recálculo e moeda: OK');
