@@ -1,4 +1,4 @@
-FROM cgr.dev/chainguard/python:latest-dev AS builder
+FROM python:3.12-slim-bookworm AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -11,7 +11,7 @@ ENV PATH="/app/venv/bin:$PATH"
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-FROM cgr.dev/chainguard/python:latest
+FROM python:3.12-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -24,6 +24,8 @@ COPY backend/__init__.py ./backend/__init__.py
 COPY backend/app ./backend/app
 COPY frontend ./frontend
 COPY scripts/ollama.py scripts/preview.py ./scripts/
+
+USER 65532:65532
 
 EXPOSE 8000
 

@@ -82,7 +82,7 @@ O Compose parte de uma configuração de CPU. O script baixa o modelo quando nec
 
 A documentação interativa da API fica em [http://localhost:8000/docs](http://localhost:8000/docs).
 
-A aplicação e o banco usam imagens da Chainguard; a IA usa `ollama/ollama`. Os volumes `postgres_data` e `ollama_models` preservam o banco e os modelos entre reinicializações.
+A aplicação usa a imagem oficial `python:3.12-slim-bookworm`, o banco usa PostgreSQL da Chainguard e a IA usa `ollama/ollama`. Os volumes `postgres_data` e `ollama_models` preservam o banco e os modelos entre reinicializações.
 
 Em um banco vazio, as migrations são executadas automaticamente. Se o banco já existia antes da funcionalidade de despesas, aplique:
 
@@ -115,7 +115,7 @@ A autenticação usa JWT em cookie `HttpOnly` com `SameSite=Lax`. Em produção,
 
 ## Desenvolvimento local
 
-Use Python 3.12 ou superior. Configure no `.env` a variável `DATABASE_URL` para um PostgreSQL acessível com as migrations aplicadas e `OLLAMA_URL` para um Ollama com o modelo configurado em `OLLAMA_MODEL` disponível. Para Ollama no próprio computador, use `http://localhost:11434`.
+Use Python 3.12, a mesma versão da imagem Docker. Configure no `.env` a variável `DATABASE_URL` para um PostgreSQL acessível com as migrations aplicadas e `OLLAMA_URL` para um Ollama com o modelo configurado em `OLLAMA_MODEL` disponível. Para Ollama no próprio computador, use `http://localhost:11434`.
 
 ```bash
 python -m venv .venv
