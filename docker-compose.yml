@@ -4,6 +4,7 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+    pull_policy: never
     ports:
       - "8000:8000"
     environment:
@@ -12,9 +13,22 @@ services:
       AUTH_SECRET_KEY: ${AUTH_SECRET_KEY:-dev-secret-change-before-production-2026}
       AUTH_TOKEN_MINUTES: ${AUTH_TOKEN_MINUTES:-480}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      OLLAMA_URL: ${OLLAMA_URL:-http://llm:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3-vl:4b-instruct-q4_K_M}
+      OLLAMA_TIMEOUT: ${OLLAMA_TIMEOUT:-900}
+      OLLAMA_NUM_CTX: ${OLLAMA_NUM_CTX:-4096}
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-60}
+      OLLAMA_IMAGE_MAX_SIDE: ${OLLAMA_IMAGE_MAX_SIDE:-1600}
+      CNPJ_LOOKUP_ENABLED: ${CNPJ_LOOKUP_ENABLED:-true}
+      CNPJ_LOOKUP_URL: ${CNPJ_LOOKUP_URL:-https://minhareceita.org}
+      CNPJ_LOOKUP_TIMEOUT: ${CNPJ_LOOKUP_TIMEOUT:-10}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       db:
         condition: service_healthy
+      llm:
+        condition: service_started
     restart: unless-stopped
 
   db:
@@ -27,7 +41,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-poupescan_dev}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/migrations/001_create_usuarios.sql:/var/lib/postgres/initdb/poupescan-schema.sql:ro
+      - ./database/migrations:/var/lib/postgres/initdb:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U poupescan -d poupescan"]
       interval: 5s
@@ -35,5 +49,26 @@ services:
       retries: 10
     restart: unless-stopped
 
+  llm:
+    image: ollama/ollama:latest
+    environment:
+      # BEGIN DEPLOY GPU ENV
+      OLLAMA_VULKAN: "0"
+      CUDA_VISIBLE_DEVICES: "-1"
+      ROCR_VISIBLE_DEVICES: "-1"
+      # END DEPLOY GPU ENV
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+      OLLAMA_MAX_QUEUE: "1"
+      OLLAMA_CONTEXT_LENGTH: ${OLLAMA_NUM_CTX:-4096}
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-60}
+    # BEGIN DEPLOY GPU DEVICES
+    # CPU: nenhum dispositivo de GPU solicitado.
+    # END DEPLOY GPU DEVICES
+    volumes:
+      - ollama_models:/root/.ollama
+    restart: unless-stopped
+
 volumes:
   postgres_data:
+  ollama_models:

@@ -33,6 +33,7 @@ node_modules/
 .vite/
 
 # Logs and temporary files
+.deploy/
 *.log
 *.tmp
 *.swp

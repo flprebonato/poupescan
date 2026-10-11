@@ -23,6 +23,7 @@ COPY --from=builder /app/venv /app/venv
 COPY backend/__init__.py ./backend/__init__.py
 COPY backend/app ./backend/app
 COPY frontend ./frontend
+COPY scripts/ollama.py scripts/preview.py ./scripts/
 
 EXPOSE 8000
 
