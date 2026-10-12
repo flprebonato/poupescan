@@ -32,6 +32,13 @@ Cadastro, login e organização de despesas com FastAPI, PostgreSQL, Ollama e um
 poupescan/
 ├── backend/
 │   ├── app/              # API, banco, segurança e leitura por IA
+│   │   ├── api/          # Dependências de autenticação e organização das rotas
+│   │   │   └── routes/   # Rotas de usuários, despesas, páginas e saúde da aplicação
+│   │   ├── core/         # Configurações, hash de senhas, tokens JWT e CAPTCHA
+│   │   ├── database/     # Modelos SQLAlchemy, conexão e sessões do banco
+│   │   ├── schemas/      # Esquemas Pydantic para validação e respostas da API
+│   │   ├── services/     # Leitura por IA, consulta de CNPJ, QR codes e cálculos dos comprovantes
+│   │   └── main.py       # Inicialização do FastAPI, registro das rotas, CORS e arquivos estáticos
 │   ├── tests/            # Testes do backend
 │   ├── Dockerfile        # Imagem Python do backend
 │   └── requirements.txt  # Dependências Python
