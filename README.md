@@ -37,9 +37,10 @@ poupescan/
 │   │   ├── core/         # Configurações, hash de senhas, tokens JWT e CAPTCHA
 │   │   ├── database/     # Modelos SQLAlchemy, conexão e sessões do banco
 │   │   ├── schemas/      # Esquemas Pydantic para validação e respostas da API
-│   │   ├── services/     # Leitura por IA, consulta de CNPJ, QR codes e cálculos dos comprovantes
+│   │   ├── services/     # Leitura por IA, prompts, consulta de CNPJ, QR codes e cálculos dos comprovantes
 │   │   └── main.py       # Inicialização do FastAPI, registro das rotas, CORS e arquivos estáticos
 │   ├── tests/            # Testes do backend
+│   │   └── fixtures/     # Imagem do comprovante usado no teste de leitura
 │   ├── Dockerfile        # Imagem Python do backend
 │   └── requirements.txt  # Dependências Python
 ├── frontend/
@@ -136,3 +137,49 @@ Para executar os testes, em outro terminal com o ambiente virtual ativado:
 ```bash
 pytest backend/tests
 ```
+
+### Teste de leitura real com comprovante
+
+O teste [`test_comprovante_real.py`](backend/tests/test_comprovante_real.py) usa apenas [`comprovante_teste.jpeg`](backend/tests/fixtures/comprovante_teste.jpeg) como arquivo de entrada. Ele chama `analisar_comprovante`, a mesma função usada por `POST /api/scan`, com os prompts `PROMPT` e `PROMPT_*` de [`reader.py`](backend/app/services/reader.py). Não usa transcrição pronta nem respostas simuladas da IA.
+
+Com o ambiente virtual ativado e o Ollama acessível em `OLLAMA_URL`, contendo o modelo configurado em `OLLAMA_MODEL`, execute na raiz do projeto:
+
+```bash
+POUPESCAN_TESTE_REAL=1 python -m pytest backend/tests/test_comprovante_real.py -v -s
+```
+
+O comando mostra o modelo e os dados retornados e verifica CNPJ, data, hora, chave de acesso, forma de pagamento, os 11 itens, quantidades, preços e descontos contra os valores esperados da imagem. Esses valores ficam nas verificações do teste e não são enviados ao modelo. O teste também executa a consulta de CNPJ configurada pela aplicação; não exige o servidor FastAPI nem o PostgreSQL em execução e não salva uma despesa.
+
+A leitura pode levar alguns minutos, conforme o hardware e `OLLAMA_TIMEOUT`. Falhas de conexão ou diferenças nos dados fazem o teste falhar. Sem `POUPESCAN_TESTE_REAL=1`, esse teste fica marcado como ignorado (`skipped`) na suíte normal. Para verificar também o cadastro e a persistência, siga o teste manual abaixo.
+
+### Teste manual com comprovante
+
+O arquivo [`backend/tests/fixtures/comprovante_teste.jpeg`](backend/tests/fixtures/comprovante_teste.jpeg) permite testar o envio, a leitura por IA, a revisão e o cadastro de uma despesa. Ele mantém os dados do estabelecimento, da compra e a chave de acesso. CPF, identificadores do cartão e QR code foram removidos.
+
+Com o servidor local iniciado pelo comando `uvicorn` acima, o PostgreSQL e o Ollama disponíveis e o modelo configurado em `OLLAMA_MODEL` instalado:
+
+1. Acesse [http://localhost:8000](http://localhost:8000) e entre em uma conta de teste.
+2. Abra **Nova despesa**, selecione `backend/tests/fixtures/comprovante_teste.jpeg` e clique em **Enviar**.
+3. Aguarde a leitura e a consulta de CNPJ. O envio usa `POST /api/scan` e os mesmos prompts da aplicação, definidos em `PROMPT` e `PROMPT_*` de [`backend/app/services/reader.py`](backend/app/services/reader.py). Não é necessário fornecer um prompt separado.
+4. Antes de editar os campos, confira os resultados esperados abaixo e registre eventuais diferenças ou avisos da leitura.
+5. Revise os 11 produtos, códigos, quantidades, preços e descontos comparando-os com a imagem. Confira especialmente os pesos `0,224 KG` e `0,380 KG` e os dois produtos Chocobiscuit com códigos distintos.
+6. Corrija os campos, se necessário, e salve a despesa após a confirmação do CNPJ. A consulta externa de CNPJ deve estar habilitada e acessível; nome e endereço podem ser atualizados conforme o cadastro retornado.
+7. Em **Minhas despesas**, abra o registro e confira os itens, totais e a imagem. Recarregue a página para verificar a persistência e exclua a despesa de teste ao terminar.
+
+| Campo | Resultado esperado |
+| --- | --- |
+| Estabelecimento na imagem | DRIFT COM DE ALIMENTOS SA / CARONE LARANJEIRAS |
+| CNPJ | `28.129.260/0012-33` |
+| Data e hora | `19/09/2026 16:07:50` |
+| Tipo de documento | NFC-e |
+| Forma de pagamento | Cartão de crédito |
+| Quantidade de itens | 11 linhas de produtos |
+| Total antes dos descontos | R$ 197,13 |
+| Desconto total | R$ 9,50 |
+| Valor a pagar / pago | R$ 187,63 |
+| Chave de acesso | `32260928129260001233652010001446229003709184` |
+| QR code | Ausente na imagem de teste |
+
+Ao registrar o resultado, informe o modelo usado, as divergências antes das correções e se foi possível salvar, consultar e excluir a despesa. Salvar após corrigir campos não significa que a leitura automática passou.
+
+Esse teste manual usa o Ollama e a consulta de CNPJ reais, assim como o teste de leitura habilitado por `POUPESCAN_TESTE_REAL=1`.
