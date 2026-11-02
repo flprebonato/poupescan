@@ -14,7 +14,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=r"http://(127\.0\.0\.1|localhost):\d+",
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PATCH", "DELETE"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
     allow_headers=["Content-Type"],
 )
 app.mount("/css", StaticFiles(directory=FRONTEND_DIR / "css"), name="css")

@@ -60,7 +60,13 @@ class ItemRequest(DadosBase):
         return self
 
 
-class DespesaRequest(DadosBase):
+class ItemAtualizacao(ItemRequest):
+    # Itens sem id são incluídos na despesa durante a correção.
+    id: int | None = Field(default=None, gt=0)
+
+
+# Campos comuns ao cadastro e à correção. Os itens são definidos em cada esquema.
+class DadosDespesa(DadosBase):
     estabelecimento: EstabelecimentoRequest
     data_despesa: date
     hora_despesa: time | None = None
@@ -70,10 +76,8 @@ class DespesaRequest(DadosBase):
     forma_pagamento: str | None = Field(default=None, max_length=80)
     documento_tipo: str | None = Field(default=None, max_length=50)
     documento_chave: str | None = None
-    qrcode_identificado: bool = False
-    itens: list[ItemRequest] = Field(min_length=1, max_length=500)
 
-    @field_validator("itens")
+    @field_validator("itens", check_fields=False)
     @classmethod
     def validar_soma_itens(cls, itens, info: ValidationInfo):
         total = info.data.get("valor_total")
@@ -107,6 +111,16 @@ class DespesaRequest(DadosBase):
             return None
         value = re.sub(r"\s", "", value)
         return value or None
+
+
+class DespesaRequest(DadosDespesa):
+    qrcode_identificado: bool = False
+    itens: list[ItemRequest] = Field(min_length=1, max_length=500)
+
+
+# O QR Code e a imagem pertencem ao envio original e não são alterados na correção.
+class DespesaAtualizacao(DadosDespesa):
+    itens: list[ItemAtualizacao] = Field(min_length=1, max_length=500)
 
 
 # A leitura aceita campos incompletos. As exigências só se aplicam ao salvar.

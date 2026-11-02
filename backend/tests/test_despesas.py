@@ -122,7 +122,7 @@ def test_chave_unica_por_usuario_e_isolamento(setup, imagem, dados):
     assert client.get(f'/api/despesas/{id}').json()['estabelecimento']['nome'] == 'Mercado Teste'
 
 
-@pytest.mark.parametrize('path,method', [('/api/scan','post'),('/api/estabelecimentos/cnpj/11222333000181','get'),('/api/despesas','post'),('/api/despesas','get'),('/api/despesas/1','get'),('/api/despesas/1/imagem','get'),('/api/despesas/1','delete')])
+@pytest.mark.parametrize('path,method', [('/api/scan','post'),('/api/estabelecimentos/cnpj/11222333000181','get'),('/api/despesas','post'),('/api/despesas','get'),('/api/despesas/1','get'),('/api/despesas/1','put'),('/api/despesas/1/imagem','get'),('/api/despesas/1','delete')])
 def test_exige_sessao(setup, path, method):
     client, _ = setup
     client.cookies.clear()
@@ -493,3 +493,147 @@ def test_salvar_chave_sem_validar_formato(setup, imagem, dados):
     client, _ = setup
     dados["documento_chave"] = "123"
     assert salvar(client, dados, imagem).status_code == 201
+
+
+def corrigir(client, id, dados):
+    return client.put(f'/api/despesas/{id}', json=dados)
+
+
+@pytest.fixture
+def salva(setup, imagem, dados):
+    client, _ = setup
+    dados['qrcode_identificado'] = True
+    dados['valor_total'] = '13.00'
+    dados['itens'].append({'codigo': '002', 'descricao': 'Pão', 'quantidade': '1', 'preco_unitario': '3.00'})
+    response = salvar(client, dados, imagem)
+    assert response.status_code == 201, response.text
+    return client.get(f"/api/despesas/{response.json()['id']}").json()
+
+
+def correcao(detail, **alteracoes):
+    campos = ('data_despesa', 'hora_despesa', 'valor_total', 'desconto_total', 'valor_pago', 'forma_pagamento', 'documento_tipo', 'documento_chave')
+    return {'estabelecimento': {'cnpj': detail['estabelecimento']['cnpj']}, **{c: detail[c] for c in campos}, 'itens': [
+        {k: item[k] for k in ('id', 'codigo', 'descricao', 'quantidade', 'unidade', 'preco_unitario', 'desconto', 'preco_total')}
+        for item in detail['itens']
+    ], **alteracoes}
+
+
+def test_correcao_edita_inclui_e_remove_itens_preservando_envio_original(setup, imagem, salva):
+    client, sessions = setup
+    leite = {**correcao(salva)['itens'][0], 'descricao': 'Leite desnatado', 'quantidade': '3', 'preco_total': '15.00'}
+    cafe = {'descricao': 'Café', 'quantidade': '1', 'preco_unitario': '4.00'}
+    response = corrigir(client, salva['id'], correcao(salva, data_despesa='2026-10-05', forma_pagamento='Pix', valor_total='19.00', itens=[leite, cafe]))
+    assert response.status_code == 200, response.text
+    assert response.json() == {'id': salva['id'], 'mensagem': 'Despesa atualizada com sucesso!', 'quantidade_itens': 2}
+    detail = client.get(f"/api/despesas/{salva['id']}").json()
+    assert (detail['data_despesa'], detail['forma_pagamento'], detail['valor_total'], detail['quantidade_itens']) == ('2026-10-05', 'Pix', 19, 2)
+    assert [(i['id'], i['descricao'], i['descricao_original']) for i in detail['itens']] == [
+        (leite['id'], 'Leite desnatado', 'LEITE INT'), (detail['itens'][1]['id'], 'Café', 'Café'),
+    ]
+    assert detail['itens'][1]['id'] not in {i['id'] for i in salva['itens']}
+    assert detail['criado_em'] == salva['criado_em'] and detail['atualizado_em']
+    assert detail['qrcode_identificado'] is True
+    assert client.get(f"/api/despesas/{salva['id']}/imagem").content == imagem
+    assert contagem(sessions, ItemDespesa) == 2
+
+
+def test_correcao_exige_proprietario_e_itens_da_propria_despesa(setup, imagem, dados, salva):
+    client, _ = setup
+    assert corrigir(client, salva['id'], correcao(salva, usuario_id=2)).status_code == 422
+    dados.pop('documento_chave')
+    outra = client.get(f"/api/despesas/{salvar(client, dados, imagem).json()['id']}").json()
+    alheio = correcao(salva)
+    alheio['itens'][0]['id'] = outra['itens'][0]['id']
+    response = corrigir(client, salva['id'], alheio)
+    assert response.status_code == 422
+    assert response.json()['detail']['campos'][0]['campo'] == 'itens.0.id'
+    repetido = correcao(salva)
+    repetido['itens'][1]['id'] = repetido['itens'][0]['id']
+    assert corrigir(client, salva['id'], repetido).status_code == 422
+    client.cookies.set('poupescan_session', criar_token_acesso(2))
+    assert corrigir(client, salva['id'], correcao(salva, forma_pagamento='Invasão')).status_code == 404
+    assert corrigir(client, 999999, correcao(salva)).status_code == 404
+    client.cookies.set('poupescan_session', criar_token_acesso(1))
+    assert client.get(f"/api/despesas/{salva['id']}").json() == salva
+    assert client.get(f"/api/despesas/{outra['id']}").json() == outra
+
+
+@pytest.mark.parametrize('alteracao', [
+    {'itens': []}, {'valor_total': '99.00'}, {'data_despesa': ''}, {'qrcode_identificado': False},
+    {'desconto_total': '1.00', 'valor_pago': '13.00'},
+])
+def test_correcao_invalida_nao_altera_nada(setup, salva, alteracao):
+    client, _ = setup
+    assert corrigir(client, salva['id'], correcao(salva, forma_pagamento='Pix', **alteracao)).status_code == 422
+    assert client.get(f"/api/despesas/{salva['id']}").json() == salva
+
+
+def test_correcao_desfaz_tudo_se_um_item_falhar(setup, salva, monkeypatch):
+    client, sessions = setup
+    original = despesas.resolver_produto
+    def falhar_no_novo(db, estabelecimento_id, item):
+        if item.codigo == '003':
+            raise SQLAlchemyError('Falha simulada no item novo')
+        return original(db, estabelecimento_id, item)
+    monkeypatch.setattr(despesas, 'resolver_produto', falhar_no_novo)
+    payload = correcao(salva, forma_pagamento='Pix', valor_total='9.00')
+    payload['itens'] = [payload['itens'][1], {'codigo': '003', 'descricao': 'Café', 'quantidade': '2', 'preco_unitario': '3.00'}]
+    assert corrigir(client, salva['id'], payload).status_code == 503
+    assert client.get(f"/api/despesas/{salva['id']}").json() == salva
+    assert contagem(sessions, ItemDespesa) == 2
+
+
+def test_correcao_limita_tamanho_e_rejeita_json_invalido(setup, salva):
+    client, _ = setup
+    assert client.put(f"/api/despesas/{salva['id']}", content=b'x' * (1024 * 1024 + 1)).status_code == 413
+    assert client.put(f"/api/despesas/{salva['id']}", content=b'not json').status_code == 422
+
+
+def test_correcao_sem_troca_de_cnpj_nao_consulta_cadastro(setup, salva, monkeypatch):
+    client, _ = setup
+    monkeypatch.setattr(despesas, 'consultar_cnpj', lambda _: pytest.fail('Não deve consultar o CNPJ já salvo'))
+    payload = correcao(salva, forma_pagamento='Dinheiro')
+    payload['estabelecimento']['cnpj'] = '11.222.333/0001-81'
+    assert corrigir(client, salva['id'], payload).status_code == 200
+    assert client.get(f"/api/despesas/{salva['id']}").json()['estabelecimento'] == salva['estabelecimento']
+
+
+def test_correcao_com_novo_cnpj_confirma_cadastro_e_troca_estabelecimento(setup, salva, monkeypatch):
+    client, sessions = setup
+    payload = correcao(salva)
+    payload['estabelecimento'] = {'cnpj': '93209765067025', 'nome': 'Nome adulterado'}
+    monkeypatch.setattr(despesas, 'consultar_cnpj', lambda _: {'status': 'indisponivel', 'validado': False})
+    response = corrigir(client, salva['id'], payload)
+    assert response.status_code == 503
+    assert response.json()['detail']['campos'][0]['campo'] == 'estabelecimento.cnpj'
+    assert client.get(f"/api/despesas/{salva['id']}").json() == salva
+    monkeypatch.setattr(despesas, 'consultar_cnpj', lambda cnpj: {
+        'status': 'sucesso', 'validado': True, 'cnpj': cnpj, 'razao_social': 'Outro Mercado', 'endereco': 'Rua B, 2',
+    })
+    assert corrigir(client, salva['id'], payload).status_code == 200
+    detail = client.get(f"/api/despesas/{salva['id']}").json()
+    assert detail['estabelecimento'] == {'cnpj': '93209765067025', 'nome': 'Outro Mercado', 'endereco': 'Rua B, 2'}
+    with sessions() as db:
+        locais = db.scalars(select(ProdutoEstabelecimento.codigo).join(Estabelecimento).where(Estabelecimento.cnpj == '93209765067025')).all()
+    assert sorted(locais) == ['001', '002']
+    assert contagem(sessions, Estabelecimento) == 2
+
+
+def test_correcao_rejeita_chave_de_outra_despesa_do_usuario(setup, imagem, dados, salva):
+    client, _ = setup
+    dados['documento_chave'] = '2' * 44
+    segunda = client.get(f"/api/despesas/{salvar(client, dados, imagem).json()['id']}").json()
+    response = corrigir(client, segunda['id'], correcao(segunda, documento_chave=salva['documento_chave']))
+    assert response.status_code == 409
+    assert response.json()['detail'] == 'Este comprovante já está cadastrado na sua conta.'
+    assert client.get(f"/api/despesas/{segunda['id']}").json() == segunda
+    assert corrigir(client, segunda['id'], correcao(segunda, forma_pagamento='Pix')).status_code == 200
+
+
+def test_cors_permite_correcao_pelo_live_server(setup):
+    client, _ = setup
+    response = client.options('/api/despesas/1', headers={
+        'Origin': 'http://127.0.0.1:5500', 'Access-Control-Request-Method': 'PUT', 'Access-Control-Request-Headers': 'content-type',
+    })
+    assert response.status_code == 200
+    assert 'PUT' in response.headers['access-control-allow-methods']
