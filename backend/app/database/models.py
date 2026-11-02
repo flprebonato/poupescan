@@ -79,6 +79,9 @@ class Despesa(Base):
     arquivo_tamanho: Mapped[int]
     arquivo_dados: Mapped[bytes] = mapped_column(LargeBinary, deferred=True)
     criado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    atualizado_em: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
     estabelecimento: Mapped[Estabelecimento] = relationship()
     itens: Mapped[list["ItemDespesa"]] = relationship(cascade="all, delete-orphan", order_by="ItemDespesa.id")
 
