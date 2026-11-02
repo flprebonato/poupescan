@@ -64,7 +64,7 @@ poupescan/
 - Em **Nova despesa**, o usuário envia um comprovante JPG ou PNG de até 10 MB.
 - A IA extrai os dados e os itens da compra para revisão antes de salvar.
 - O CNPJ é consultado para preencher o nome e o endereço do estabelecimento; a confirmação é necessária para salvar.
-- Em **Minhas despesas**, o usuário consulta e exclui suas compras registradas.
+- Em **Minhas despesas**, o usuário consulta, corrige e exclui suas compras registradas. A correção usa a mesma tela de conferência e mantém a imagem original.
 
 Os prompts da IA ficam em [`backend/app/services/reader.py`](backend/app/services/reader.py), na variável `PROMPT` e nas constantes `PROMPT_*` usadas para ler partes do comprovante. O modelo padrão é o **Qwen3-VL 4B** (`qwen3-vl:4b-instruct-q4_K_M`), configurado por `OLLAMA_MODEL` no `.env`.
 
@@ -115,6 +115,7 @@ Também é possível abrir `frontend/index.html` com o Live Server do VS Code. M
 - `POST /api/despesas` — salva o comprovante e os dados revisados.
 - `GET /api/despesas` — lista as despesas do usuário.
 - `GET /api/despesas/{id}` — retorna os detalhes de uma despesa.
+- `PUT /api/despesas/{id}` — corrige os dados e a lista completa de itens, mantendo a imagem original.
 - `GET /api/despesas/{id}/imagem` — retorna a imagem original.
 - `DELETE /api/despesas/{id}` — exclui a despesa.
 - `GET /api/health` — verifica aplicação e banco.
@@ -162,4 +163,4 @@ Com o servidor local iniciado pelo comando `uvicorn` acima, o PostgreSQL e o Oll
 2. Abra **Nova despesa**, selecione `backend/tests/fixtures/comprovante_teste.jpeg` e clique em **Enviar**.
 3. Aguarde a leitura e a consulta de CNPJ. O envio usa `POST /api/scan` e os mesmos prompts da aplicação, definidos em `PROMPT` e `PROMPT_*` de [`backend/app/services/reader.py`](backend/app/services/reader.py). Não é necessário fornecer um prompt separado.
 4. Na tela de conferência, os dados extraídos podem ser visualizados e editados se necessário.
-5. Ao salvar, você pode conferir o registro em **Minhas despesas**. Abra o registro e confira os itens, totais e a imagem. Recarregue a página para verificar a persistência e exclua a despesa de teste ao terminar.
+5. Ao salvar, você pode conferir o registro em **Minhas despesas**. Abra o registro e confira os itens, totais e a imagem. Use **Editar despesa** para corrigir dados e itens já salvos. Recarregue a página para verificar a persistência e exclua a despesa de teste ao terminar.
