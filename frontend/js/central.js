@@ -286,6 +286,8 @@ carregarUsuario().catch(() => window.location.replace(apiBaseUrl || '/'));
     let selectionVersion = 0;
     let savedMessage = '';
     let totalsMismatch = false;
+    let editId = null;
+    let savedStore = null;
 
     function notice(id, text, kind = '') {
         const el = $(id);
@@ -320,8 +322,13 @@ carregarUsuario().catch(() => window.location.replace(apiBaseUrl || '/'));
         return storeRegistration?.cnpj === currentCnpj() && storeRegistration?.validado === true;
     }
 
+    // Na correção, o estabelecimento salvo continua válido enquanto o CNPJ não for trocado.
+    function storeReady() {
+        return registrationReady() || savedStore?.cnpj === currentCnpj();
+    }
+
     function updateRegistrationControls() {
-        $('#expense-save').disabled = busy || cnpjPending || !registrationReady() || totalsMismatch;
+        $('#expense-save').disabled = busy || cnpjPending || !storeReady() || totalsMismatch;
         $('#cnpj-retry').disabled = busy || cnpjPending;
         $('#store-card').setAttribute('aria-busy', String(cnpjPending));
     }
@@ -341,8 +348,9 @@ carregarUsuario().catch(() => window.location.replace(apiBaseUrl || '/'));
     function applyRegistration(registration = {}) {
         const valid = registration.status === 'sucesso' && registration.validado === true
             && registration.cnpj === currentCnpj() && Boolean(registration.razao_social);
+        const saved = !valid && savedStore?.cnpj === currentCnpj();
         storeRegistration = valid ? registration : null;
-        $('#exp-estabelecimento').value = valid ? registration.razao_social : '';
+        $('#exp-estabelecimento').value = valid ? registration.razao_social : saved ? savedStore.nome : '';
         form.querySelectorAll('[data-address]').forEach(input => {
             input.value = valid ? (registration.endereco_campos?.[input.dataset.address] ?? '') : '';
         });
@@ -355,7 +363,8 @@ carregarUsuario().catch(() => window.location.replace(apiBaseUrl || '/'));
         };
         notice('#cnpj-status', valid
             ? ['Dados preenchidos pelo cadastro do CNPJ', registration.situacao_cadastral].filter(Boolean).join(' · ')
-            : statusLabels[registration.status] || 'Consulte um CNPJ válido antes de salvar.', valid ? 'info' : 'warning');
+            : saved ? `Não foi possível consultar o CNPJ agora. A despesa manterá o estabelecimento salvo${savedStore.endereco ? `, em ${savedStore.endereco}` : ''}.`
+            : statusLabels[registration.status] || 'Consulte um CNPJ válido antes de salvar.', valid || saved ? 'info' : 'warning');
         $('#cnpj-retry').hidden = valid || !/^[0-9]{14}$/.test(currentCnpj());
         if (valid) inputError($('#exp-cnpj'), '');
         updateRegistrationControls();
@@ -407,7 +416,8 @@ carregarUsuario().catch(() => window.location.replace(apiBaseUrl || '/'));
         $('#receipt-scan').disabled = value || !file;
         $('#scan-progress').hidden = !value || saving;
         $('#receipt-scan').textContent = value && !saving ? 'Processando…' : 'Enviar';
-        $('#expense-save').textContent = value && saving ? 'Salvando despesa…' : 'Salvar despesa';
+        const saveLabel = editId === null ? 'despesa' : 'alterações';
+        $('#expense-save').textContent = value && saving ? `Salvando ${saveLabel}…` : `Salvar ${saveLabel}`;
         updateRegistrationControls();
         if (saving) setStep(value ? 3 : 2);
     }
@@ -415,6 +425,7 @@ carregarUsuario().catch(() => window.location.replace(apiBaseUrl || '/'));
     const receiptModal = $('#receipt-modal');
     const receiptContent = $('#receipt-modal-content');
     let receiptTrigger = null;
+    const receiptUrl = id => `${apiBaseUrl}/api/despesas/${id}/imagem`;
 
     function openReceipt(src, trigger) {
         if (!src) return;
@@ -429,7 +440,7 @@ carregarUsuario().catch(() => window.location.replace(apiBaseUrl || '/'));
         document.body.classList.add('receipt-modal-open');
     }
 
-    $('#receipt-view').addEventListener('click', event => openReceipt(previewUrl, event.currentTarget));
+    $('#receipt-view').addEventListener('click', event => openReceipt(editId === null ? previewUrl : receiptUrl(editId), event.currentTarget));
     $('#receipt-modal-close').addEventListener('click', () => receiptModal.close());
     receiptModal.addEventListener('click', event => {
         if (event.target !== receiptModal) return;
@@ -452,12 +463,29 @@ carregarUsuario().catch(() => window.location.replace(apiBaseUrl || '/'));
         receiptContent.scrollTo(0, 0);
     });
 
+    // A mesma tela confere a leitura de um novo comprovante e corrige despesas salvas.
+    function setEditMode(id) {
+        editId = id;
+        const editing = id !== null;
+        $('#create-title').textContent = editing ? 'Editar despesa' : 'Nova despesa';
+        $('#create-subtitle').textContent = editing
+            ? 'Você está corrigindo uma despesa já cadastrada. Ao salvar, as alterações substituem os dados atuais.'
+            : 'Envie a imagem e confira os dados antes de salvar.';
+        $('.expense-steps').hidden = editing;
+        $('#receipt-upload').hidden = editing;
+        $('#receipt-back').hidden = editing;
+        $('#edit-cancel').hidden = !editing;
+        $('#save-note').textContent = editing ? 'A imagem original do comprovante será mantida.' : 'A imagem será salva junto com a despesa após sua confirmação.';
+        $('#expense-save').textContent = editing ? 'Salvar alterações' : 'Salvar despesa';
+    }
+
     function clearFile() {
         if (receiptModal.open) receiptModal.close();
         resetRegistration();
         if (previewUrl) URL.revokeObjectURL(previewUrl);
-        file = previewUrl = null;
+        file = previewUrl = savedStore = null;
         hasRead = dirty = false;
+        setEditMode(null);
         $('#receipt-file').value = '';
         $('#receipt-selection').hidden = true;
         $('#receipt-drop').hidden = false;
@@ -561,7 +589,8 @@ carregarUsuario().catch(() => window.location.replace(apiBaseUrl || '/'));
 
     function addItem(item = {}, update = true) {
         const row = document.createElement('tr');
-        row.dataset.original = item.descricao ?? '';
+        row.dataset.id = item.id ?? '';
+        row.dataset.original = item.descricao_original ?? item.descricao ?? '';
         row.dataset.apresentacao = item.apresentacao ?? '';
         columns.forEach(([key, label, type, required, max]) => {
             const td = document.createElement('td');
@@ -616,6 +645,7 @@ carregarUsuario().catch(() => window.location.replace(apiBaseUrl || '/'));
     function serializeItems() {
         return [...itemBody.children].map(row => {
             const item = { descricao_original: row.dataset.original || null, apresentacao: row.dataset.apresentacao || null };
+            if (row.dataset.id) item.id = Number(row.dataset.id);
             row.querySelectorAll('input').forEach(input => { item[input.dataset.itemField] = serializedValue(input); });
             return item;
         });
@@ -796,7 +826,7 @@ carregarUsuario().catch(() => window.location.replace(apiBaseUrl || '/'));
 
     function validate() {
         updateTotals();
-        if (cnpjPending || !registrationReady()) {
+        if (cnpjPending || !storeReady()) {
             inputError($('#exp-cnpj'), cnpjPending ? 'Aguarde a consulta do CNPJ.' : 'Consulte um CNPJ válido antes de salvar.');
             $('#exp-cnpj').focus();
             return false;
@@ -838,17 +868,25 @@ carregarUsuario().catch(() => window.location.replace(apiBaseUrl || '/'));
 
     form.addEventListener('submit', async event => {
         event.preventDefault();
-        if (busy || !file || !validate()) return;
+        if (busy || (!file && editId === null) || !validate()) return;
         notice('#expense-notice', '');
         const data = {};
         fields.forEach(input => { data[input.dataset.field] = serializedValue(input); });
         data.estabelecimento = { cnpj: currentCnpj() };
         delete data.cnpj;
         data.itens = serializeItems();
-        const body = new FormData(); body.append('imagem', file); body.append('dados', JSON.stringify(data));
+        let path = '/api/despesas';
+        let options;
+        if (editId === null) {
+            const body = new FormData(); body.append('imagem', file); body.append('dados', JSON.stringify(data));
+            options = { method: 'POST', body };
+        } else {
+            path += `/${editId}`;
+            options = { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) };
+        }
         setBusy(true, true);
         try {
-            const result = await request('/api/despesas', { method: 'POST', body });
+            const result = await request(path, options);
             dirty = false;
             setBusy(false, true);
             clearFile();
@@ -901,7 +939,7 @@ carregarUsuario().catch(() => window.location.replace(apiBaseUrl || '/'));
 
     async function loadDetail(id) {
         detailId = id;
-        $('#detail-content').replaceChildren(); $('#expense-delete').disabled = true;
+        $('#detail-content').replaceChildren(); $('#expense-delete').disabled = true; $('#expense-edit').hidden = true;
         try {
             const expense = await request(`/api/despesas/${id}`);
             if (detailId !== id || currentRoute !== `#despesa/${id}`) return;
@@ -931,10 +969,34 @@ carregarUsuario().catch(() => window.location.replace(apiBaseUrl || '/'));
             imageButton.textContent = 'Clique aqui para ver a imagem do comprovante enviado';
             imageButton.setAttribute('aria-haspopup', 'dialog');
             imageButton.setAttribute('aria-controls', 'receipt-modal');
-            imageButton.addEventListener('click', () => openReceipt(`${apiBaseUrl}/api/despesas/${id}/imagem`, imageButton));
+            imageButton.addEventListener('click', () => openReceipt(receiptUrl(id), imageButton));
             $('#detail-content').append(grid, scroll, imageButton); $('#expense-delete').disabled = false;
+            $('#expense-edit').href = `#despesa/${id}/editar`; $('#expense-edit').hidden = false;
         } catch (error) { if (detailId === id) notice('#detail-notice', error.message); }
     }
+
+    async function loadEdit(id) {
+        clearFile();
+        setEditMode(id);
+        notice('#expense-notice', 'Carregando a despesa…', 'info');
+        try {
+            const expense = await request(`/api/despesas/${id}`);
+            if (editId !== id) return;
+            savedStore = expense.estabelecimento;
+            fields.forEach(input => {
+                setValue(input, input.dataset.field === 'cnpj' ? savedStore.cnpj : expense[input.dataset.field]);
+                inputError(input, ''); markMissing(input);
+            });
+            expense.itens.forEach(item => addItem(item, false));
+            notice('#expense-notice', '');
+            form.hidden = false;
+            updateTotals();
+            // Preenche o endereço pelo cadastro; se a consulta falhar, o estabelecimento salvo é mantido.
+            scheduleRegistration(true);
+        } catch (error) { if (editId === id) notice('#expense-notice', error.message); }
+    }
+
+    $('#edit-cancel').addEventListener('click', () => { window.location.hash = `despesa/${editId}`; });
 
     $('#expense-delete').addEventListener('click', async () => {
         if (!detailId || !window.confirm('Excluir esta despesa, seus itens e a imagem do comprovante?')) return;
@@ -951,12 +1013,21 @@ carregarUsuario().catch(() => window.location.replace(apiBaseUrl || '/'));
         if (busy && hash !== currentRoute) { history.replaceState(null, '', currentRoute); return; }
         const create = hash === '#nova-despesa';
         const detail = hash.match(/^#despesa\/(\d+)$/);
+        const edit = hash.match(/^#despesa\/(\d+)\/editar$/);
+        const editTarget = edit ? Number(edit[1]) : null;
+        if (editId !== null && editTarget !== editId) {
+            if (dirty && !window.confirm('Descartar as alterações não salvas desta despesa?')) { history.replaceState(null, '', currentRoute); return; }
+            clearFile();
+        } else if (edit && editId === null && file && !window.confirm('Descartar a nova despesa em andamento para editar esta despesa?')) {
+            history.replaceState(null, '', currentRoute); return;
+        }
         currentRoute = hash;
-        $('#expense-create').hidden = !create;
-        $('#expense-history').hidden = create || Boolean(detail);
-        $('.dashboard-welcome').hidden = create || Boolean(detail);
+        $('#expense-create').hidden = !create && !edit;
+        $('#expense-history').hidden = create || Boolean(detail) || Boolean(edit);
+        $('.dashboard-welcome').hidden = create || Boolean(detail) || Boolean(edit);
         $('#expense-detail').hidden = !detail;
         if (create) { $('#create-title').focus(); }
+        else if (edit) { if (editId !== editTarget) loadEdit(editTarget); $('#create-title').focus(); }
         else if (detail) { notice('#detail-notice', savedMessage, 'success'); savedMessage = ''; loadDetail(Number(detail[1])); $('#detail-title').focus(); }
         else { detailId = null; loadHistory(); }
         window.scrollTo(0, 0);

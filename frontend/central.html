@@ -37,7 +37,7 @@
         </section>
         <section id="expense-create" hidden aria-labelledby="create-title">
             
-            <div class="expense-heading"><div><h1 id="create-title" tabindex="-1">Nova despesa</h1><p>Envie a imagem e confira os dados antes de salvar.</p></div></div>
+            <div class="expense-heading"><div><h1 id="create-title" tabindex="-1">Nova despesa</h1><p id="create-subtitle">Envie a imagem e confira os dados antes de salvar.</p></div></div>
             <ol class="expense-steps" aria-label="Etapas do cadastro"><li aria-current="step"><span>1</span> Enviar comprovante</li><li><span>2</span> Conferir dados</li><li><span>3</span> Salvar despesa</li></ol>
             <p id="expense-notice" class="expense-notice" role="alert" hidden></p>
             <section id="receipt-upload" class="expense-card">
@@ -79,10 +79,10 @@
                     <p id="calculation-notice" class="expense-notice info" role="status" hidden></p>
                     <p id="items-empty" class="expense-notice" hidden>Adicione pelo menos um item.</p><p id="items-warning" class="expense-notice warning" role="status" hidden></p>
                 </section>
-                <div class="expense-savebar"><span class="muted">A imagem será salva junto com a despesa após sua confirmação.</span><button id="expense-save" class="expense-button" type="submit">Salvar despesa</button></div>
+                <div class="expense-savebar"><span id="save-note" class="muted">A imagem será salva junto com a despesa após sua confirmação.</span><div class="savebar-actions"><button id="edit-cancel" class="expense-button secondary" type="button" hidden>Cancelar edição</button><button id="expense-save" class="expense-button" type="submit">Salvar despesa</button></div></div>
             </form>
         </section>
-        <section id="expense-detail" class="expense-card" hidden aria-labelledby="detail-title"><h1 id="detail-title" tabindex="-1">Detalhes da despesa</h1><p id="detail-notice" class="expense-notice" role="status" hidden></p><div id="detail-content"></div><div class="expense-actions"><a class="expense-button" href="#nova-despesa">Enviar outro comprovante</a><button id="expense-delete" class="expense-button danger" type="button">Excluir despesa</button></div></section>
+        <section id="expense-detail" class="expense-card" hidden aria-labelledby="detail-title"><h1 id="detail-title" tabindex="-1">Detalhes da despesa</h1><p id="detail-notice" class="expense-notice" role="status" hidden></p><div id="detail-content"></div><div class="expense-actions"><a class="expense-button" href="#nova-despesa">Enviar outro comprovante</a><a id="expense-edit" class="expense-button secondary" href="#despesas" hidden>Editar despesa</a><button id="expense-delete" class="expense-button danger" type="button">Excluir despesa</button></div></section>
     </main>
 
     <dialog id="receipt-modal" class="receipt-modal" aria-labelledby="receipt-modal-title">
