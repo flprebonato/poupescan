@@ -22,11 +22,7 @@ Para um banco existente, aplique a migration de despesas sem recriar o volume:
 docker compose exec -T db psql -v ON_ERROR_STOP=1 -U poupescan -d poupescan < database/migrations/002_create_despesas.sql
 ```
 
-- `003_add_atualizado_em_despesas.sql`: adiciona `atualizado_em` às despesas e o gatilho que registra a data de cada correção. Despesas existentes recebem a própria data de criação. O script pode ser executado mais de uma vez.
-
-```bash
-docker compose exec -T db psql -v ON_ERROR_STOP=1 -U poupescan -d poupescan < database/migrations/003_add_atualizado_em_despesas.sql
-```
+- `003_add_atualizado_em_despesas.sql`: adiciona `atualizado_em` às despesas e o gatilho que registra a data de cada correção.
 
 O Compose monta a pasta inteira em `/var/lib/postgres/initdb`; em um volume novo, os scripts são executados em ordem numérica. Em volumes existentes, o comando acima é necessário. Campos opcionais aceitam `NULL`, inclusive a hora (`hora_despesa`), descontos e valores não identificados. `descricao_original` preserva a leitura e `descricao` contém a correção confirmada pelo usuário.
 
